@@ -3,13 +3,14 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import bcrypt from "bcryptjs"
 import prisma from "@/lib/prisma"
 
+
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Mot de passe", type: "password" },
+        password: { label: "Mot de passe", type: "password"},
       },
       async authorize(credentials) {
         const user = await prisma.user.findUnique({
