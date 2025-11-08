@@ -1,191 +1,99 @@
-//api/responsable/sessions/[id]/route.js
-import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { NextResponse } from 'next/server';
 
-// GET - Récupérer une session par ID
+// GET /api/responsable/sessions/[id]
 export async function GET(request, { params }) {
   try {
-    // Récupérer la session avec les headers
-    const headers = new Headers(request.headers);
-    const session = await getServerSession(authOptions);
-    
-    console.log('Session récupérée:', session ? 'exists' : 'null');
-    
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { error: 'Non authentifié' },
-        { status: 401 }
-      );
-    }
-    
-    if (session.user.role !== 'RESPONSABLE') {
-      return NextResponse.json(
-        { error: 'Accès non autorisé. Rôle requis: RESPONSABLE, Rôle actuel: ' + session.user.role },
-        { status: 403 }
-      );
-    }
+    const id = parseInt(params.id);
 
-    const { id } = await params;
     const sessionData = await prisma.session.findUnique({
-      where: { id: parseInt(id) },
+      where: { id },
       include: {
-        formateur: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            cv: true,
-            role: true,
-          },
-        },
-        coordinateur: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-        fiche: {
+        coordinateur: true,
+        fiche: true,
+        formateurs: {
           include: {
-            responsable: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-            coordinateur: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
+            formateur: true, //  on inclut les données du formateur ici
           },
         },
       },
     });
 
     if (!sessionData) {
-      return NextResponse.json(
-        { error: 'Session non trouvée' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Session non trouvée' }, { status: 404 });
     }
 
-    // Calculer les informations supplémentaires
-    const dureeJours = Math.ceil(
-      (new Date(sessionData.dateFin) - new Date(sessionData.dateDebut)) / (1000 * 60 * 60 * 24)
-    );
-    const montant = sessionData.nbHeures * 50; 
-
-    return NextResponse.json({
+    const formattedSession = {
       ...sessionData,
-      dureeJours,
-      montant,
-    });
+      formateurs: sessionData.formateurs.map((sf) => sf.formateur),
+    };
+
+    return NextResponse.json(formattedSession, { status: 200 });
   } catch (error) {
-    console.error('Erreur lors de la récupération de la session:', error);
-    console.error('Stack:', error.stack);
-    return NextResponse.json(
-      { error: 'Erreur serveur', details: error.message },
-      { status: 500 }
-    );
+    console.error('Erreur GET session:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
 
-// PUT - Mettre à jour une session
+// PUT /api/responsable/sessions/[id]
 export async function PUT(request, { params }) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || session.user.role !== 'RESPONSABLE') {
-      return NextResponse.json(
-        { error: 'Accès non autorisé' },
-        { status: 403 }
-      );
+    const id = parseInt(params.id);
+    const body = await request.json();
+
+    let updatedSession;
+
+    //  Si on assigne un coordinateur
+    if (body.coordinateurId !== undefined) {
+      updatedSession = await prisma.session.update({
+        where: { id },
+        data: {
+          coordinateurId: body.coordinateurId || null,
+        },
+      });
     }
 
-    const { id } = await params;
-    const data = await request.json();
-    const { titre, dateDebut, dateFin, nbHeures, formateurId, coordinateurId, ficheId } = data;
+    //  Si on assigne des formateurs (multiple)
+    if (body.formateurIds && Array.isArray(body.formateurIds)) {
+      // On supprime d’abord les anciens liens
+      await prisma.sessionFormateur.deleteMany({
+        where: { sessionId: id },
+      });
 
-    // Validations
-    if (dateFin && dateDebut && new Date(dateFin) < new Date(dateDebut)) {
-      return NextResponse.json(
-        { error: 'La date de fin doit être après la date de début' },
-        { status: 400 }
-      );
+      // Puis on insère les nouveaux
+      const formateurLinks = body.formateurIds.map((fid) => ({
+        sessionId: id,
+        formateurId: fid,
+      }));
+
+      await prisma.sessionFormateur.createMany({
+        data: formateurLinks,
+      });
+
+      updatedSession = await prisma.session.findUnique({
+        where: { id },
+        include: {
+          coordinateur: true,
+          fiche: true,
+          formateurs: {
+            include: { formateur: true },
+          },
+        },
+      });
     }
 
-    if (nbHeures && nbHeures <= 0) {
-      return NextResponse.json(
-        { error: 'Le nombre d\'heures doit être positif' },
-        { status: 400 }
-      );
+    if (!updatedSession) {
+      return NextResponse.json({ error: 'Aucune mise à jour effectuée' }, { status: 400 });
     }
 
-    const updatedSession = await prisma.session.update({
-      where: { id: parseInt(id) },
-      data: {
-        ...(titre && { titre }),
-        ...(dateDebut && { dateDebut: new Date(dateDebut) }),
-        ...(dateFin && { dateFin: new Date(dateFin) }),
-        ...(nbHeures && { nbHeures: parseFloat(nbHeures) }),
-        ...(formateurId !== undefined && { formateurId: formateurId ? parseInt(formateurId) : null }),
-        ...(coordinateurId !== undefined && { coordinateurId: coordinateurId ? parseInt(coordinateurId) : null }),
-        ...(ficheId !== undefined && { ficheId: ficheId ? parseInt(ficheId) : null }),
-      },
-      include: {
-        formateur: true,
-        coordinateur: true,
-        fiche: true,
-      },
-    });
+    const formatted = {
+      ...updatedSession,
+      formateurs: updatedSession.formateurs.map((sf) => sf.formateur),
+    };
 
-    return NextResponse.json(updatedSession);
+    return NextResponse.json(formatted, { status: 200 });
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la session:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur' },
-      { status: 500 }
-    );
+    console.error('Erreur PUT session:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
-
-// DELETE - Supprimer une session
-export async function DELETE(request, { params }) {
-  try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session || session.user.role !== 'RESPONSABLE') {
-      return NextResponse.json(
-        { error: 'Accès non autorisé' },
-        { status: 403 }
-      );
-    }
-
-    const { id } = await params;
-    await prisma.session.delete({
-      where: { id: parseInt(id) },
-    });
-
-    return NextResponse.json({ 
-      message: 'Session supprimée avec succès' 
-    });
-  } catch (error) {
-    console.error('Erreur lors de la suppression de la session:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur' },
-      { status: 500 }
-    );
-  }
-}
-
-
-
-
-
