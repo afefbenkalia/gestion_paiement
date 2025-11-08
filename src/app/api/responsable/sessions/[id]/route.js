@@ -4,16 +4,17 @@ import { NextResponse } from 'next/server';
 // GET /api/responsable/sessions/[id]
 export async function GET(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    const { id } = await params;
+    const sessionId = parseInt(id);
 
     const sessionData = await prisma.session.findUnique({
-      where: { id },
+      where: { id: sessionId },
       include: {
         coordinateur: true,
         fiche: true,
         formateurs: {
           include: {
-            formateur: true, //  on inclut les données du formateur ici
+            formateur: true,
           },
         },
       },
@@ -25,7 +26,7 @@ export async function GET(request, { params }) {
 
     const formattedSession = {
       ...sessionData,
-      formateurs: sessionData.formateurs.map((sf) => sf.formateur),
+      formateurs: sessionData.formateurs?.map((sf) => sf.formateur) || [],
     };
 
     return NextResponse.json(formattedSession, { status: 200 });
@@ -38,40 +39,52 @@ export async function GET(request, { params }) {
 // PUT /api/responsable/sessions/[id]
 export async function PUT(request, { params }) {
   try {
-    const id = parseInt(params.id);
+    // Ajoutez await ici aussi
+    const { id } = await params;
+    const sessionId = parseInt(id);
     const body = await request.json();
 
     let updatedSession;
 
-    //  Si on assigne un coordinateur
+    // Si on assigne un coordinateur
     if (body.coordinateurId !== undefined) {
       updatedSession = await prisma.session.update({
-        where: { id },
+        where: { id: sessionId },
         data: {
           coordinateurId: body.coordinateurId || null,
+        },
+        include: {
+          coordinateur: true,
+          fiche: true,
+          formateurs: {
+            include: { formateur: true },
+          },
         },
       });
     }
 
-    //  Si on assigne des formateurs (multiple)
+    // Si on assigne des formateurs
     if (body.formateurIds && Array.isArray(body.formateurIds)) {
-      // On supprime d’abord les anciens liens
+      // On supprime d'abord les anciens liens
       await prisma.sessionFormateur.deleteMany({
-        where: { sessionId: id },
+        where: { sessionId: sessionId },
       });
 
       // Puis on insère les nouveaux
-      const formateurLinks = body.formateurIds.map((fid) => ({
-        sessionId: id,
-        formateurId: fid,
-      }));
+      if (body.formateurIds.length > 0) {
+        const formateurLinks = body.formateurIds.map((fid) => ({
+          sessionId: sessionId,
+          formateurId: fid,
+        }));
 
-      await prisma.sessionFormateur.createMany({
-        data: formateurLinks,
-      });
+        await prisma.sessionFormateur.createMany({
+          data: formateurLinks,
+        });
+      }
 
+      // Récupérer la session mise à jour
       updatedSession = await prisma.session.findUnique({
-        where: { id },
+        where: { id: sessionId },
         include: {
           coordinateur: true,
           fiche: true,
@@ -86,9 +99,10 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Aucune mise à jour effectuée' }, { status: 400 });
     }
 
+    // Correction du problème .map sur undefined
     const formatted = {
       ...updatedSession,
-      formateurs: updatedSession.formateurs.map((sf) => sf.formateur),
+      formateurs: updatedSession.formateurs?.map((sf) => sf.formateur) || [],
     };
 
     return NextResponse.json(formatted, { status: 200 });
