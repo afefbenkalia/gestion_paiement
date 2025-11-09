@@ -13,6 +13,11 @@ enum Role {
   FORMATEUR
 }
 
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   name      String
@@ -20,6 +25,7 @@ model User {
   password  String
   cv        String?  @db.Text
   role      Role     @default(FORMATEUR)
+  status    UserStatus @default(INACTIVE)
   createdAt DateTime @default(now())
 
   fichesResponsable    FicheDePaie[] @relation("ResponsableFiches")
