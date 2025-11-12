@@ -26,6 +26,7 @@ model User {
   cv        String?  @db.Text
   role      Role     @default(FORMATEUR)
   status    UserStatus @default(INACTIVE)
+  specialite String?   @db.VarChar(150)  // ✅ ajout ici
   createdAt DateTime @default(now())
 
   fichesResponsable    FicheDePaie[] @relation("ResponsableFiches")
@@ -39,20 +40,8 @@ model User {
   @@index([role])
 }
 
-model User {
-  id         Int        @id @default(autoincrement())
-  name       String
-  email      String     @unique
-  password   String
-  role       Role       @default(FORMATEUR)
-  specialite String?    // seulement pour formateur
-  cv         String?    // lien vers le fichier uploadé
-  status     UserStatus @default(PENDING) // statut de la demande d'inscription
-  createdAt  DateTime   @default(now())
 
- // 🔽 Relation avec FicheDePaie
-  fiches     FicheDePaie[]
-}
+
 
 
 model FicheDePaie {
