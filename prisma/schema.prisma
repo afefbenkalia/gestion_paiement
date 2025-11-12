@@ -19,15 +19,27 @@ enum Role {
   FORMATEUR
 }
 
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role     @default(FORMATEUR)
-  fiches    FicheDePaie[]
-  createdAt DateTime @default(now())
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
+
+model User {
+  id         Int        @id @default(autoincrement())
+  name       String
+  email      String     @unique
+  password   String
+  role       Role       @default(FORMATEUR)
+  specialite String?    // seulement pour formateur
+  cv         String?    // lien vers le fichier uploadé
+  status     UserStatus @default(PENDING) // statut de la demande d'inscription
+  createdAt  DateTime   @default(now())
+
+ // 🔽 Relation avec FicheDePaie
+  fiches     FicheDePaie[]
+}
+
 
 model FicheDePaie {
   id          Int      @id @default(autoincrement())
