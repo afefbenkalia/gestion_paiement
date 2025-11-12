@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -20,9 +14,29 @@ enum Role {
 }
 
 enum UserStatus {
-  PENDING
-  APPROVED
-  REJECTED
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  cv        String?  @db.Text
+  role      Role     @default(FORMATEUR)
+  status    UserStatus @default(INACTIVE)
+  createdAt DateTime @default(now())
+
+  fichesResponsable    FicheDePaie[] @relation("ResponsableFiches")
+  fichesCoordinateur   FicheDePaie[] @relation("CoordinateurFiches")
+
+  sessionsCoordinateur Session[]     @relation("CoordinateurSessions")
+
+  sessionsFormateur    SessionFormateur[]
+
+  @@index([email])
+  @@index([role])
 }
 
 model User {
@@ -42,12 +56,63 @@ model User {
 
 
 model FicheDePaie {
-  id          Int      @id @default(autoincrement())
-  mois        String
-  heures      Float
-  montant     Float
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  createdAt   DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  numMemoire     String   @unique @db.VarChar(100)
+  nomResponsable String   @db.VarChar(200)
+  fonction       String   @db.VarChar(150)
+  classe         String   @db.VarChar(50)
+  specialite     String   @db.VarChar(150)
+  niveau         String   @db.VarChar(100)
+  promotion      String   @db.VarChar(100)
+  semestre       String   @db.VarChar(50)
+  periode        String   @db.VarChar(150)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  responsableId  Int
+  responsable    User @relation("ResponsableFiches", fields: [responsableId], references: [id], onDelete: Cascade)
+
+  coordinateurId Int
+  coordinateur   User @relation("CoordinateurFiches", fields: [coordinateurId], references: [id], onDelete: Cascade)
+
+  sessions      Session[] @relation("FicheSessions")
+
+  @@index([responsableId])
+  @@index([coordinateurId])
+  @@index([numMemoire])
+  @@index([specialite])
 }
 
+model Session {
+  id          Int      @id @default(autoincrement())
+  titre       String   @db.VarChar(255)
+  dateDebut   DateTime
+  dateFin     DateTime
+  nbHeures    Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  formateurs  SessionFormateur[]
+
+  coordinateurId Int?
+  coordinateur   User? @relation("CoordinateurSessions", fields: [coordinateurId], references: [id], onDelete: SetNull)
+
+  ficheId     Int?
+  fiche       FicheDePaie? @relation("FicheSessions", fields: [ficheId], references: [id], onDelete: Cascade)
+
+  @@index([coordinateurId])
+  @@index([ficheId])
+  @@index([dateDebut])
+}
+
+model SessionFormateur {
+  id          Int      @id @default(autoincrement())
+  sessionId   Int
+  formateurId Int
+
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  formateur   User     @relation(fields: [formateurId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, formateurId])
+  @@index([formateurId])
+}
