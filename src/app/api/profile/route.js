@@ -8,6 +8,9 @@ import prisma from "@/lib/prisma"
 // PATCH -> met à jour name/email
 // PUT -> changement de mot de passe (currentPassword + newPassword)
 
+
+
+//récupération de l’utilisateur depuis le token
 async function getUserFromToken(req) {
   //Vérifier l’identité de l’utilisateur grâce à un token JWT (NextAuth)
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
@@ -23,10 +26,11 @@ async function getUserFromToken(req) {
 
 export async function GET(req) {
   try {
+    //Vérifie si le token est valide (utilisateur connecté)
     const user = await getUserFromToken(req)
     if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
 
-    // Ne pas exposer le password
+    // sans mot de passe 
     const { password, ...safe } = user
     return NextResponse.json(safe)
   } catch (err) {
@@ -34,9 +38,10 @@ export async function GET(req) {
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
-
+// modifier le profil (name, email)
 export async function PATCH(req) {
   try {
+    //recupere l'utilisateur connecté
     const user = await getUserFromToken(req)
     if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
 
