@@ -83,21 +83,7 @@ export default function PendingPage() {
           </div>
         )}
 
-        {/* Messages d'attente */}
-        <div className="space-y-2 mb-8">
-          <p className="text-sm text-gray-600 flex items-center justify-center">
-            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-            En cours de vérification de votre profil
-          </p>
-          <p className="text-sm text-gray-600 flex items-center justify-center">
-            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-            Vérification de vos documents
-          </p>
-          <p className="text-sm text-gray-600 flex items-center justify-center">
-            <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-            Confirmation de votre accès
-          </p>
-        </div>
+        
 
         {/* Bouton de déconnexion */}
         <button

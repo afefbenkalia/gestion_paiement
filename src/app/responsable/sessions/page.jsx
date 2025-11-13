@@ -2,13 +2,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Search, Calendar, User, Users, Loader2 } from 'lucide-react';
+import { Search, Calendar, User, Users, Loader2, Pencil, Trash2 } from 'lucide-react';
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtreFormateur, setFiltreFormateur] = useState('');
   const [filtreCoordinateur, setFiltreCoordinateur] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   const formatDuration = (start, end) => {
     if (!start || !end) return 'N/A';
@@ -60,6 +61,30 @@ export default function SessionsPage() {
 
     fetchSessions();
   }, [filtreFormateur, filtreCoordinateur]);
+
+  const handleDelete = async (sessionId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette session ?')) {
+      return;
+    }
+
+    setDeletingId(sessionId);
+    try {
+      const res = await fetch(`/api/responsable/sessions/${sessionId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        setSessions((prev) => prev.filter((session) => session.id !== sessionId));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Erreur lors de la suppression de la session ❌');
+      }
+    } catch (error) {
+      console.error('Erreur suppression session:', error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -171,12 +196,30 @@ export default function SessionsPage() {
                 </div>
 
                 <div className="mt-6 flex justify-end">
-                  <Link
-                    href={`/responsable/sessions/${session.id}`}
-                    className="text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition-transform"
-                  >
-                    Voir détails →
-                  </Link>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/responsable/sessions/${session.id}`}
+                      className="text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition-transform flex items-center gap-1"
+                    >
+                      Voir détails →
+                    </Link>
+                    <Link
+                      href={`/responsable/sessions/${session.id}/edit`}
+                      className="text-sm bg-white border border-blue-500 text-blue-600 px-4 py-2 rounded-lg shadow hover:bg-blue-50 transition-colors flex items-center gap-2"
+                    >
+                      <Pencil className="w-4 h-4" />
+                      Modifier
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(session.id)}
+                      disabled={deletingId === session.id}
+                      className="text-sm bg-red-500 text-white px-4 py-2 rounded-lg shadow hover:bg-red-600 transition-colors flex items-center gap-2 disabled:opacity-70"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deletingId === session.id ? 'Suppression...' : 'Supprimer'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

@@ -1,23 +1,27 @@
 import prisma from '@/lib/prisma';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+const sessionInclude = {
+  coordinateur: true,
+  fiche: true,
+  formateurs: {
+    include: {
+      formateur: true,
+    },
+  },
+};
 
 // GET /api/responsable/sessions/[id]
 export async function GET(request, { params }) {
   try {
-    const { id } = await params;
-    const sessionId = parseInt(id);
+    const { id } = params;
+    const sessionId = Number(id);
 
     const sessionData = await prisma.session.findUnique({
       where: { id: sessionId },
-      include: {
-        coordinateur: true,
-        fiche: true,
-        formateurs: {
-          include: {
-            formateur: true,
-          },
-        },
-      },
+      include: sessionInclude,
     });
 
     if (!sessionData) {
@@ -39,67 +43,122 @@ export async function GET(request, { params }) {
 // PUT /api/responsable/sessions/[id]
 export async function PUT(request, { params }) {
   try {
-    // Ajoutez await ici aussi
-    const { id } = await params;
-    const sessionId = parseInt(id);
-    const body = await request.json();
+    const session = await getServerSession(authOptions);
 
-    let updatedSession;
-
-    // Si on assigne un coordinateur
-    if (body.coordinateurId !== undefined) {
-      updatedSession = await prisma.session.update({
-        where: { id: sessionId },
-        data: {
-          coordinateurId: body.coordinateurId || null,
-        },
-        include: {
-          coordinateur: true,
-          fiche: true,
-          formateurs: {
-            include: { formateur: true },
-          },
-        },
-      });
+    if (!session || !session.user || session.user.role !== 'RESPONSABLE') {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
-    // Si on assigne des formateurs
-    if (body.formateurIds && Array.isArray(body.formateurIds)) {
-      // On supprime d'abord les anciens liens
-      await prisma.sessionFormateur.deleteMany({
-        where: { sessionId: sessionId },
-      });
+    const { id } = params;
+    const sessionId = Number(id);
 
-      // Puis on insère les nouveaux
-      if (body.formateurIds.length > 0) {
-        const formateurLinks = body.formateurIds.map((fid) => ({
-          sessionId: sessionId,
-          formateurId: fid,
-        }));
+    if (Number.isNaN(sessionId)) {
+      return NextResponse.json({ error: 'Identifiant invalide' }, { status: 400 });
+    }
 
-        await prisma.sessionFormateur.createMany({
-          data: formateurLinks,
+    const body = await request.json();
+
+    const dataToUpdate = {};
+    let shouldUpdateSession = false;
+
+    if (body.titre !== undefined) {
+      dataToUpdate.titre = String(body.titre).trim();
+      shouldUpdateSession = true;
+    }
+
+    if (body.dateDebut !== undefined) {
+      const parsed = new Date(body.dateDebut);
+      if (Number.isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: 'Date de début invalide.' }, { status: 400 });
+      }
+      dataToUpdate.dateDebut = parsed;
+      shouldUpdateSession = true;
+    }
+
+    if (body.dateFin !== undefined) {
+      const parsed = new Date(body.dateFin);
+      if (Number.isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: 'Date de fin invalide.' }, { status: 400 });
+      }
+      dataToUpdate.dateFin = parsed;
+      shouldUpdateSession = true;
+    }
+
+    if (body.nbHeures !== undefined) {
+      const parsed = Number(body.nbHeures);
+      if (Number.isNaN(parsed) || parsed <= 0) {
+        return NextResponse.json({ error: 'Nombre d’heures invalide.' }, { status: 400 });
+      }
+      dataToUpdate.nbHeures = parsed;
+      shouldUpdateSession = true;
+    }
+
+    if (body.coordinateurId !== undefined) {
+      const parsed =
+        body.coordinateurId === null || body.coordinateurId === ''
+          ? null
+          : Number(body.coordinateurId);
+      if (parsed !== null && Number.isNaN(parsed)) {
+        return NextResponse.json({ error: 'Identifiant coordinateur invalide.' }, { status: 400 });
+      }
+      dataToUpdate.coordinateurId = parsed;
+      shouldUpdateSession = true;
+    }
+
+    const formateurIds =
+      body.formateurIds !== undefined
+        ? Array.isArray(body.formateurIds)
+          ? body.formateurIds.map((id) => Number(id)).filter((id) => !Number.isNaN(id))
+          : null
+        : undefined;
+
+    if (formateurIds === null) {
+      return NextResponse.json(
+        { error: 'Le format des formateurs est invalide.' },
+        { status: 400 }
+      );
+    }
+
+    if (!shouldUpdateSession && formateurIds === undefined) {
+      return NextResponse.json(
+        { error: 'Aucun champ valide fourni pour la mise à jour.' },
+        { status: 400 }
+      );
+    }
+
+    const updatedSession = await prisma.$transaction(async (tx) => {
+      if (shouldUpdateSession) {
+        await tx.session.update({
+          where: { id: sessionId },
+          data: dataToUpdate,
         });
       }
 
-      // Récupérer la session mise à jour
-      updatedSession = await prisma.session.findUnique({
+      if (formateurIds !== undefined) {
+        await tx.sessionFormateur.deleteMany({
+          where: { sessionId },
+        });
+
+        if (formateurIds.length > 0) {
+          await tx.sessionFormateur.createMany({
+            data: formateurIds.map((formateurId) => ({
+              sessionId,
+              formateurId,
+            })),
+          });
+        }
+      }
+
+      return tx.session.findUnique({
         where: { id: sessionId },
-        include: {
-          coordinateur: true,
-          fiche: true,
-          formateurs: {
-            include: { formateur: true },
-          },
-        },
+        include: sessionInclude,
       });
-    }
+    });
 
     if (!updatedSession) {
-      return NextResponse.json({ error: 'Aucune mise à jour effectuée' }, { status: 400 });
+      return NextResponse.json({ error: 'Session non trouvée' }, { status: 404 });
     }
 
-    // Correction du problème .map sur undefined
     const formatted = {
       ...updatedSession,
       formateurs: updatedSession.formateurs?.map((sf) => sf.formateur) || [],
@@ -108,6 +167,35 @@ export async function PUT(request, { params }) {
     return NextResponse.json(formatted, { status: 200 });
   } catch (error) {
     console.error('Erreur PUT session:', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request, { params }) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || session.user.role !== 'RESPONSABLE') {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    }
+
+    const { id } = params;
+    const sessionId = Number(id);
+
+    if (Number.isNaN(sessionId)) {
+      return NextResponse.json({ error: 'Identifiant invalide' }, { status: 400 });
+    }
+
+    await prisma.session.delete({
+      where: { id: sessionId },
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    console.error('Erreur DELETE session:', error);
+    if (error.code === 'P2025') {
+      return NextResponse.json({ error: 'Session non trouvée' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
