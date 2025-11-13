@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Mail, Phone, MapPin, Download, Check, Users } from 'lucide-react';
+import { Mail, Phone, MapPin, Download, Check, Users, Pencil, Trash2 } from 'lucide-react';
 
 // =============================
 //  Petit carousel responsive
@@ -100,6 +100,7 @@ export default function SessionDetailPage({ params }) {
   const [formateurs, setFormateurs] = useState([]);
   const [coordinateurs, setCoordinateurs] = useState([]);
   const [selectedFormateurs, setSelectedFormateurs] = useState([]);
+  const [deleting, setDeleting] = useState(false);
 
   const orderedFormateurs = React.useMemo(() => {
     if (!formateurs) return [];
@@ -228,6 +229,36 @@ export default function SessionDetailPage({ params }) {
     window.open(`/api/users/${formateurId}/cv`, '_blank');
   };
 
+  const handleEdit = () => {
+    router.push(`/responsable/sessions/${id}/edit`);
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette session ?')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/responsable/sessions/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        alert('Session supprimée avec succès ✅');
+        router.push('/responsable/sessions');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Erreur lors de la suppression de la session ❌');
+      }
+    } catch (error) {
+      console.error('Erreur suppression session:', error);
+      alert('Erreur interne du serveur.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -248,8 +279,23 @@ export default function SessionDetailPage({ params }) {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <h1 className="text-3xl font-bold tracking-tight">Détails de la Formation</h1>
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" className="flex items-center gap-2" onClick={handleEdit}>
+            <Pencil className="h-4 w-4" />
+            Modifier la session
+          </Button>
+          <Button
+            variant="destructive"
+            className="flex items-center gap-2"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            <Trash2 className="h-4 w-4" />
+            {deleting ? 'Suppression...' : 'Supprimer la session'}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,46 +1,59 @@
-'use client'
-import { useEffect, useState } from 'react'
+'use client';
+
+import { useEffect } from 'react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { ResponsableSidebar } from '@/components/responsable-sidebar';
 
 export default function ResponsableDashboard() {
-  const [users, setUsers] = useState([])
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
-    fetch('/api/pending-users')
-      .then(res => res.json())
-      .then(data => setUsers(data))
-  }, [])
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    } else if (status === 'authenticated' && session?.user?.role !== 'RESPONSABLE') {
+      router.push('/dashboard');
+    }
+  }, [session, status, router]);
 
-  async function handleAction(id, action) {
-    await fetch('/api/update-status', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, action }),
-    })
-    setUsers(users.filter(u => u.id !== id))
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement du tableau de bord...</p>
+        </div>
+      </div>
+    );
   }
 
+  if (!session || session.user.role !== 'RESPONSABLE') {
+    return null;
+  }
+
+  const userName = session.user.name || 'Responsable';
+
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-bold mb-4">Demandes d'inscription</h2>
-      {users.length === 0 && <p>Aucune demande en attente.</p>}
-      {users.map(u => (
-        <div key={u.id} className="border p-4 mb-3 rounded flex justify-between items-center">
-          <div>
-            <p><strong>{u.name}</strong> ({u.role})</p>
-            <p>Email : {u.email}</p>
-            {u.cv && <p>CV : {u.cv}</p>}
-            {u.specialite && <p>Spécialité : {u.specialite}</p>}
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => handleAction(u.id, 'APPROVED')} className="bg-green-600 text-white px-3 py-1 rounded">
-              Accepter
-            </button>
-            <button onClick={() => handleAction(u.id, 'REJECTED')} className="bg-red-600 text-white px-3 py-1 rounded">
-              Refuser
-            </button>
-          </div>
+    <div className="flex min-h-screen bg-gray-50">
+      <ResponsableSidebar />
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+          <header className="space-y-2">
+            <p className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
+              Tableau de bord Responsable
+            </p>
+            <h1 className="text-3xl font-bold text-gray-900">Bienvenue, {userName} </h1>
+            <p className="text-gray-600">
+              Consultez les principales fonctionnalités de gestion et suivez l’activité de vos sessions,
+              formateurs et coordinateurs.
+            </p>
+          </header>
+
+         
         </div>
-      ))}
+      </main>
     </div>
-  )
+  );
 }
