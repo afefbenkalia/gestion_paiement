@@ -1,7 +1,8 @@
-'use client'
+"use client"
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signIn } from 'next-auth/react'
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -32,9 +33,21 @@ export default function RegisterPage() {
 
     const result = await res.json()
     if (res.ok) {
-      setMessage("✅ Compte créé, en attente de validation du responsable.")
-      // rediriger vers la page d'attente après inscription
-      router.push('/pending')
+      // Tenter une connexion automatique pour que la session corresponde au nouvel utilisateur
+      const signRes = await signIn('credentials', {
+        redirect: false,
+        email: form.email,
+        password: form.password,
+      })
+
+      if (signRes && signRes.error) {
+        // Même si la connexion automatique échoue, rediriger vers pending (compte créé)
+        setMessage("✅ Compte créé, en attente de validation du responsable. (connexion automatique échouée)")
+        router.push('/pending')
+      } else {
+        setMessage("✅ Compte créé, en attente de validation du responsable.")
+        router.push('/pending')
+      }
     } else setMessage("❌ " + result.error)
   }
 

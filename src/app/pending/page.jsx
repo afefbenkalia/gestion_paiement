@@ -17,7 +17,7 @@ export default function PendingPage() {
         if (res.ok) {
           const data = await res.json()
           setUser(data)
-          // Si l'utilisateur a été accepté, rediriger vers le dashboard
+          // Si responsable a été accepté, rediriger vers le dashboard
           if (data.isAccepted) {
             router.push('/dashboard')
           }
@@ -25,10 +25,10 @@ export default function PendingPage() {
           // Si non authentifié, rediriger vers login
           router.push('/login')
         }
-      } catch (error) {
+      }catch (error) {
         console.error('Erreur lors de la vérification du statut:', error)
         router.push('/login')
-      } finally {
+      }finally {
         setIsLoading(false)
       }
     }

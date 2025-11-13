@@ -9,6 +9,7 @@ import prisma from "@/lib/prisma"
 // PUT -> changement de mot de passe (currentPassword + newPassword)
 
 async function getUserFromToken(req) {
+  //Vérifier l’identité de l’utilisateur grâce à un token JWT (NextAuth)
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   if (!token) return null
   const id = Number(token.sub)
