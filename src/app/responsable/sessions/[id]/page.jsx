@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Mail, Phone, MapPin, Download, Check, Users, Pencil, Trash2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Download, Check, Users } from 'lucide-react';
 
 // =============================
 //  Petit carousel responsive
@@ -100,7 +100,6 @@ export default function SessionDetailPage({ params }) {
   const [formateurs, setFormateurs] = useState([]);
   const [coordinateurs, setCoordinateurs] = useState([]);
   const [selectedFormateurs, setSelectedFormateurs] = useState([]);
-  const [deleting, setDeleting] = useState(false);
 
   const orderedFormateurs = React.useMemo(() => {
     if (!formateurs) return [];
@@ -114,7 +113,9 @@ export default function SessionDetailPage({ params }) {
   }, [id]);
 
   useEffect(() => {
-    if (session) fetchUsers();
+    if (session?.id) {
+      fetchUsers();
+    }
   }, [session?.id]);
 
   // =============================
@@ -166,11 +167,18 @@ export default function SessionDetailPage({ params }) {
         fetch('/api/users?role=FORMATEUR'),
         fetch('/api/users?role=COORDINATEUR'),
       ]);
-      if (resFormateurs.ok) setFormateurs(await resFormateurs.json());
+      if (resFormateurs.ok) {
+        const formateursData = await resFormateurs.json();
+        setFormateurs(formateursData);
+      }
       if (resCoord.ok) {
         const allCoord = await resCoord.json();
-        if (session?.coordinateur) setCoordinateurs(allCoord.filter(c => c.id !== session.coordinateur.id));
-        else setCoordinateurs(allCoord);
+        // Filtrer pour exclure le coordinateur actuellement assigné
+        if (session?.coordinateur) {
+          setCoordinateurs(allCoord.filter(c => c.id !== session.coordinateur.id));
+        } else {
+          setCoordinateurs(allCoord);
+        }
       }
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error);
@@ -179,6 +187,9 @@ export default function SessionDetailPage({ params }) {
 
   const handleAssignCoordinateur = async (coordinateurId) => {
     try {
+      // Sauvegarder l'ancien coordinateur s'il existe
+      const ancienCoordinateur = session?.coordinateur;
+      
       const res = await fetch(`/api/responsable/sessions/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -186,11 +197,62 @@ export default function SessionDetailPage({ params }) {
       });
       if (res.ok) {
         const updated = await res.json();
+        
+        // Mettre à jour la session avec le nouveau coordinateur
         setSession(updated);
-        await fetchUsers();
+        
+        // Mettre à jour la liste des coordinateurs disponibles
+        setCoordinateurs(prev => {
+          // Retirer le coordinateur assigné de la liste
+          let newList = prev.filter(c => c.id !== coordinateurId);
+          
+          // Si un ancien coordinateur existait, le remettre dans la liste
+          if (ancienCoordinateur) {
+            // Vérifier qu'il n'est pas déjà dans la liste
+            if (!newList.find(c => c.id === ancienCoordinateur.id)) {
+              newList = [...newList, ancienCoordinateur];
+            }
+          }
+          
+          return newList;
+        });
       }
     } catch (err) {
       console.error('Erreur:', err);
+      alert('Erreur lors de l\'assignation du coordinateur');
+    }
+  };
+
+  const handleRemoveCoordinateur = async () => {
+    try {
+      // Sauvegarder le coordinateur actuel avant de le retirer
+      const coordinateurARetirer = session?.coordinateur;
+      
+      if (!coordinateurARetirer) return;
+      
+      const res = await fetch(`/api/responsable/sessions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coordinateurId: null }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        
+        // Mettre à jour la session (coordinateur sera null)
+        setSession(updated);
+        
+        // Remettre le coordinateur retiré dans la liste des disponibles
+        setCoordinateurs(prev => {
+          // Vérifier qu'il n'est pas déjà dans la liste
+          if (!prev.find(c => c.id === coordinateurARetirer.id)) {
+            return [...prev, coordinateurARetirer];
+          }
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error('Erreur:', err);
+      alert('Erreur lors de la suppression du coordinateur');
     }
   };
 
@@ -229,36 +291,6 @@ export default function SessionDetailPage({ params }) {
     window.open(`/api/users/${formateurId}/cv`, '_blank');
   };
 
-  const handleEdit = () => {
-    router.push(`/responsable/sessions/${id}/edit`);
-  };
-
-  const handleDelete = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette session ?')) {
-      return;
-    }
-
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/responsable/sessions/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (res.ok) {
-        alert('Session supprimée avec succès ✅');
-        router.push('/responsable/sessions');
-      } else {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error || 'Erreur lors de la suppression de la session ❌');
-      }
-    } catch (error) {
-      console.error('Erreur suppression session:', error);
-      alert('Erreur interne du serveur.');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   if (loading)
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -279,23 +311,8 @@ export default function SessionDetailPage({ params }) {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Détails de la Formation</h1>
-        <div className="flex flex-wrap gap-3">
-          <Button variant="outline" className="flex items-center gap-2" onClick={handleEdit}>
-            <Pencil className="h-4 w-4" />
-            Modifier la session
-          </Button>
-          <Button
-            variant="destructive"
-            className="flex items-center gap-2"
-            onClick={handleDelete}
-            disabled={deleting}
-          >
-            <Trash2 className="h-4 w-4" />
-            {deleting ? 'Suppression...' : 'Supprimer la session'}
-          </Button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -332,8 +349,54 @@ export default function SessionDetailPage({ params }) {
                   <div className="font-semibold">
                     {session.formateurs?.length ? session.formateurs.map(f => <span key={f.id}>{f.name}, </span>) : 'Non spécifié'}
                   </div>
+                  
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Liste coordinateurs disponibles */}
+          <Card>
+            <CardHeader><CardTitle>Coordinateurs Disponibles</CardTitle></CardHeader>
+            <CardContent>
+              {coordinateurs?.length > 0 ? (
+                <Carousel
+                  items={coordinateurs}
+                  maxVisible={3}
+                  perPage={3}
+                  renderItem={(c) => (
+                    <div className="bg-white border rounded-lg p-4">
+                      <div className="flex flex-col items-center text-center space-y-2">
+                       
+                        <div className="flex items-center justify-center w-14 h-14 bg-blue-500 text-white rounded-full text-lg font-bold">
+                          {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                        </div>
+                        <h3 className="font-semibold text-sm">{c.name}</h3>
+                        <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                          <Mail className="h-3 w-3" />{c.email}
+                        </p>
+                        {c.telephone && (
+                          <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                            <Phone className="h-3 w-3" />{c.telephone}
+                          </p>
+                        )}
+                        <Button 
+                          size="sm" 
+                          className="bg-blue-500 hover:bg-blue-600 w-full text-white py-1"
+                          onClick={() => handleAssignCoordinateur(c.id)}
+                        >
+                           Assigner
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                />
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">Aucun coordinateur disponible</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -385,10 +448,10 @@ export default function SessionDetailPage({ params }) {
           </Card>
         </div>
 
-        {/* Coordinateur */}
+        {/* Coordinateur actuel */}
         <div>
           <Card>
-            <CardHeader><CardTitle>Coordinateur</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Coordinateur Actuel</CardTitle></CardHeader>
             <CardContent>
               {session.coordinateur ? (
                 <div className="flex flex-col items-center text-center space-y-4">
@@ -400,7 +463,7 @@ export default function SessionDetailPage({ params }) {
                   <p className="text-sm text-blue-600 flex items-center gap-2"><Mail className="h-4 w-4" />{session.coordinateur.email}</p>
                   {session.coordinateur.telephone && <p className="text-sm text-blue-600 flex items-center gap-2"><Phone className="h-4 w-4" />{session.coordinateur.telephone}</p>}
                   {session.coordinateur.adresse && <p className="text-sm text-blue-600 flex items-center gap-2"><MapPin className="h-4 w-4" />{session.coordinateur.adresse}</p>}
-                  <Button variant="destructive" className="w-full" onClick={() => handleAssignCoordinateur(null)}>Retirer</Button>
+                  <Button variant="destructive" className="w-full" onClick={handleRemoveCoordinateur}>Retirer</Button>
                 </div>
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
