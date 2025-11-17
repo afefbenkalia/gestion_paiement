@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import bcrypt from 'bcryptjs';
+import { sendAccountActivatedEmail } from '@/lib/mail';
 
 // GET - Récupérer un utilisateur par ID
 export async function GET(request, { params }) {
@@ -148,6 +149,19 @@ export async function PUT(request, { params }) {
         createdAt: true,
       },
     });
+
+    // Si le statut est passé de INACTIVE -> ACTIVE, envoyer un email d'activation
+    try {
+      const statusChangedToActive = updateData.status === 'ACTIVE' && existingUser.status !== 'ACTIVE';
+      if (statusChangedToActive) {
+        // Envoyer l'email en arrière-plan; attraper les erreurs pour ne pas casser la réponse
+        sendAccountActivatedEmail(updatedUser.email, updatedUser.name).catch((err) => {
+          console.error('Erreur envoi email activation:', err);
+        });
+      }
+    } catch (err) {
+      console.error('Erreur lors de la tentative d envoi de l email:', err);
+    }
 
     return NextResponse.json(updatedUser);
   } catch (error) {
