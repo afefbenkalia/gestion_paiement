@@ -10,16 +10,23 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (session) {
+      // Vérifier le statut pour FORMATEUR et COORDINATEUR
+      if ((session.user.role === 'FORMATEUR' || session.user.role === 'COORDINATEUR') && 
+          (session.user.status === 'INACTIVE' || session.user.status === 'PENDING')) {
+        router.push('/pending')
+        return
+      }
+
       // Rediriger vers le dashboard spécifique selon le rôle
       switch (session.user.role) {
         case 'RESPONSABLE':
           router.push('/dashboard/responsable')
           break
         case 'COORDINATEUR':
-          router.push('/dashboard/coordinateur')
+          router.push('/coordinateur')
           break
         case 'FORMATEUR':
-          router.push('/dashboard/formateur')
+          router.push('/formateur')
           break
         default:
           router.push('/dashboard')

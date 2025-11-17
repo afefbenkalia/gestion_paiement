@@ -27,8 +27,16 @@ export default function LoginPage() {
 
       if (session?.user?.role === 'RESPONSABLE') {
         router.push('/dashboard/responsable')
-      } else {
-        router.push('/dashboard/pending')
+      } else if (session?.user?.status === 'INACTIVE' || session?.user?.status === 'PENDING') {
+        // Si FORMATEUR ou COORDINATEUR avec status INACTIVE/PENDING → page pending
+        router.push('/pending')
+      } else if (session?.user?.status === 'ACTIVE') {
+        // Si FORMATEUR ou COORDINATEUR avec status ACTIVE → dashboard du rôle
+        if (session?.user?.role === 'FORMATEUR') {
+          router.push('/formateur')
+        } else if (session?.user?.role === 'COORDINATEUR') {
+          router.push('/coordinateur')
+        }
       }
     }
   }
