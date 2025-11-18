@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Calendar, Clock, Users, User, Mail, Phone } from 'lucide-react';
+import { X, Calendar, Clock, Users, User, Mail, Phone, BookOpen } from 'lucide-react';
 
 export default function CreateSessionPage() {
   const router = useRouter();
@@ -15,7 +15,11 @@ export default function CreateSessionPage() {
   const [titre, setTitre] = useState('');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
-  const [nbHeures, setNbHeures] = useState('');
+  const [classe, setClasse] = useState('');
+  const [specialite, setSpecialite] = useState('');
+  const [promotion, setPromotion] = useState('');
+  const [niveau, setNiveau] = useState('');
+  const [semestre, setSemestre] = useState('');
   const [formateurIds, setFormateurIds] = useState([]);
   const [coordinateurId, setCoordinateurId] = useState('');
 
@@ -59,9 +63,8 @@ export default function CreateSessionPage() {
     setLoading(true);
 
     try {
-      const parsedHeures = Number(nbHeures);
-      if (!titre.trim() || Number.isNaN(parsedHeures) || parsedHeures <= 0) {
-        alert('Veuillez renseigner un titre valide et un nombre d’heures positif.');
+      if (!titre.trim()) {
+        alert('Veuillez renseigner un titre valide.');
         setLoading(false);
         return;
       }
@@ -70,7 +73,11 @@ export default function CreateSessionPage() {
         titre: titre.trim(),
         dateDebut,
         dateFin,
-        nbHeures: parsedHeures,
+        classe,
+        specialite,
+        promotion,
+        niveau,
+        semestre,
         formateurIds,
         coordinateurId: coordinateurId || null,
       };
@@ -103,7 +110,7 @@ export default function CreateSessionPage() {
     <div className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Détails de la Formation</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Création de Session</h1>
         <p className="text-muted-foreground mt-2">
           Créer une nouvelle session de formation
         </p>
@@ -113,12 +120,15 @@ export default function CreateSessionPage() {
         {/* Détails de la Formation */}
         <Card>
           <CardHeader>
-            <CardTitle>Détails de la Formation</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Informations de la Session
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="titre" className="text-muted-foreground">Nom de la formation</Label>
+                <Label htmlFor="titre" className="text-muted-foreground">Titre de la session *</Label>
                 <Input
                   id="titre"
                   type="text"
@@ -131,43 +141,93 @@ export default function CreateSessionPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="dateDebut" className="text-muted-foreground">Date de début</Label>
-                <Input
-                  id="dateDebut"
-                  type="date"
-                  value={dateDebut}
-                  onChange={(e) => setDateDebut(e.target.value)}
-                  className="font-semibold"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dateFin" className="text-muted-foreground">Date de fin</Label>
-                <Input
-                  id="dateFin"
-                  type="date"
-                  value={dateFin}
-                  onChange={(e) => setDateFin(e.target.value)}
-                  className="font-semibold"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="nbHeures" className="text-muted-foreground">Heures totales</Label>
+                <Label htmlFor="dateDebut" className="text-muted-foreground">Date de début *</Label>
                 <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="nbHeures"
-                    type="number"
-                    value={nbHeures}
-                    onChange={(e) => setNbHeures(e.target.value)}
-                    placeholder="120"
+                    id="dateDebut"
+                    type="date"
+                    value={dateDebut}
+                    onChange={(e) => setDateDebut(e.target.value)}
                     className="pl-10 font-semibold"
                     required
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dateFin" className="text-muted-foreground">Date de fin *</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="dateFin"
+                    type="date"
+                    value={dateFin}
+                    onChange={(e) => setDateFin(e.target.value)}
+                    className="pl-10 font-semibold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="classe" className="text-muted-foreground">Classe</Label>
+                <Input
+                  id="classe"
+                  type="text"
+                  value={classe}
+                  onChange={(e) => setClasse(e.target.value)}
+                  placeholder="Ex: Classe A, Groupe 1"
+                  className="font-semibold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="specialite" className="text-muted-foreground">Spécialité</Label>
+                <Input
+                  id="specialite"
+                  type="text"
+                  value={specialite}
+                  onChange={(e) => setSpecialite(e.target.value)}
+                  placeholder="Ex: Informatique, Développement Web"
+                  className="font-semibold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promotion" className="text-muted-foreground">Promotion</Label>
+                <Input
+                  id="promotion"
+                  type="text"
+                  value={promotion}
+                  onChange={(e) => setPromotion(e.target.value)}
+                  placeholder="Ex: Promotion 2024, Promotion 2025"
+                  className="font-semibold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="niveau" className="text-muted-foreground">Niveau</Label>
+                <Input
+                  id="niveau"
+                  type="text"
+                  value={niveau}
+                  onChange={(e) => setNiveau(e.target.value)}
+                  placeholder="Ex: Débutant, Intermédiaire, Avancé"
+                  className="font-semibold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="semestre" className="text-muted-foreground">Semestre</Label>
+                <Input
+                  id="semestre"
+                  type="text"
+                  value={semestre}
+                  onChange={(e) => setSemestre(e.target.value)}
+                  placeholder="Ex: S1, S2, Semestre 1"
+                  className="font-semibold"
+                />
               </div>
             </div>
           </CardContent>
@@ -270,7 +330,7 @@ export default function CreateSessionPage() {
                             variant="secondary" 
                             className="bg-blue-100 text-blue-700"
                           >
-                            Nouveau
+                            Formateur
                           </Badge>
                         </div>
                         

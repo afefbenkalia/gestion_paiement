@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Mail, Phone, MapPin, Download, Check, Users } from 'lucide-react';
-
+import { Mail, Phone, MapPin, Download, Check, Users, BookOpen, Calendar, User, GraduationCap } from 'lucide-react';
+//app/responsable/sessions/[id]/page.jsx
 // =============================
 //  Petit carousel responsive
 // =============================
@@ -193,7 +193,19 @@ export default function SessionDetailPage({ params }) {
       const res = await fetch(`/api/responsable/sessions/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coordinateurId: coordinateurId || null }),
+        body: JSON.stringify({ 
+          coordinateurId: coordinateurId || null,
+          // Conserver tous les autres champs existants
+          titre: session.titre,
+          dateDebut: session.dateDebut,
+          dateFin: session.dateFin,
+          classe: session.classe,
+          specialite: session.specialite,
+          promotion: session.promotion,
+          niveau: session.niveau,
+          semestre: session.semestre,
+          formateurIds: session.formateurs?.map(f => f.id) || []
+        }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -233,7 +245,19 @@ export default function SessionDetailPage({ params }) {
       const res = await fetch(`/api/responsable/sessions/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ coordinateurId: null }),
+        body: JSON.stringify({ 
+          coordinateurId: null,
+          // Conserver tous les autres champs existants
+          titre: session.titre,
+          dateDebut: session.dateDebut,
+          dateFin: session.dateFin,
+          classe: session.classe,
+          specialite: session.specialite,
+          promotion: session.promotion,
+          niveau: session.niveau,
+          semestre: session.semestre,
+          formateurIds: session.formateurs?.map(f => f.id) || []
+        }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -261,7 +285,19 @@ export default function SessionDetailPage({ params }) {
       const res = await fetch(`/api/responsable/sessions/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formateurIds: newAssignedIds }),
+        body: JSON.stringify({ 
+          formateurIds: newAssignedIds,
+          // Conserver tous les autres champs existants
+          titre: session.titre,
+          dateDebut: session.dateDebut,
+          dateFin: session.dateFin,
+          classe: session.classe,
+          specialite: session.specialite,
+          promotion: session.promotion,
+          niveau: session.niveau,
+          semestre: session.semestre,
+          coordinateurId: session.coordinateur?.id || null
+        }),
       });
       if (res.ok) {
         const updated = await res.json();
@@ -311,8 +347,27 @@ export default function SessionDetailPage({ params }) {
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Détails de la Formation</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Détails de la Session</h1>
+          <p className="text-muted-foreground mt-2">
+            Informations complètes de la session de formation
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => router.push(`/responsable/sessions/${session.id}/edit`)}
+          >
+            Modifier la session
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => router.push('/responsable/sessions')}
+          >
+            Retour aux sessions
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -320,36 +375,94 @@ export default function SessionDetailPage({ params }) {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Détails de la Formation</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Informations de la Session
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-muted-foreground">Nom de la formation</Label>
-                  <p className="font-semibold">{session.titre}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Durée</Label>
-                  <p className="font-semibold">{formatDuration(session.dateDebut, session.dateFin)}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Date de début</Label>
-                  <p className="font-semibold">
-                    {new Date(session.dateDebut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Date de fin</Label>
-                  <p className="font-semibold">
-                    {new Date(session.dateFin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Formateur(s)</Label>
-                  <div className="font-semibold">
-                    {session.formateurs?.length ? session.formateurs.map(f => <span key={f.id}>{f.name}, </span>) : 'Non spécifié'}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-muted-foreground">Titre de la session</Label>
+                    <p className="font-semibold text-lg">{session.titre}</p>
                   </div>
                   
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-muted-foreground">Date de début</Label>
+                      <p className="font-semibold flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        {new Date(session.dateDebut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">Date de fin</Label>
+                      <p className="font-semibold flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        {new Date(session.dateFin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-muted-foreground">Durée</Label>
+                    <p className="font-semibold">{formatDuration(session.dateDebut, session.dateFin)}</p>
+                  </div>
+
+                  {session.classe && (
+                    <div>
+                      <Label className="text-muted-foreground">Classe</Label>
+                      <p className="font-semibold">{session.classe}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {session.specialite && (
+                    <div>
+                      <Label className="text-muted-foreground">Spécialité</Label>
+                      <p className="font-semibold">{session.specialite}</p>
+                    </div>
+                  )}
+
+                  {session.promotion && (
+                    <div>
+                      <Label className="text-muted-foreground">Promotion</Label>
+                      <p className="font-semibold">{session.promotion}</p>
+                    </div>
+                  )}
+
+                  {session.niveau && (
+                    <div>
+                      <Label className="text-muted-foreground">Niveau</Label>
+                      <p className="font-semibold">{session.niveau}</p>
+                    </div>
+                  )}
+
+                  {session.semestre && (
+                    <div>
+                      <Label className="text-muted-foreground">Semestre</Label>
+                      <p className="font-semibold">{session.semestre}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <Label className="text-muted-foreground">Formateurs assignés</Label>
+                    <div className="font-semibold">
+                      {session.formateurs?.length ? (
+                        <div className="flex flex-wrap gap-1">
+                          {session.formateurs.map(f => (
+                            <Badge key={f.id} variant="secondary" className="bg-orange-100 text-orange-700">
+                              {f.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Aucun formateur assigné</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -357,7 +470,12 @@ export default function SessionDetailPage({ params }) {
 
           {/* Liste coordinateurs disponibles */}
           <Card>
-            <CardHeader><CardTitle>Coordinateurs Disponibles</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Coordinateurs Disponibles
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               {coordinateurs?.length > 0 ? (
                 <Carousel
@@ -367,25 +485,24 @@ export default function SessionDetailPage({ params }) {
                   renderItem={(c) => (
                     <div className="bg-white border rounded-lg p-4">
                       <div className="flex flex-col items-center text-center space-y-2">
-                       
-                        <div className="flex items-center justify-center w-14 h-14 bg-blue-500 text-white rounded-full text-lg font-bold">
+                        <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-lg font-bold">
                           {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                         </div>
                         <h3 className="font-semibold text-sm">{c.name}</h3>
                         <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
                           <Mail className="h-3 w-3" />{c.email}
                         </p>
-                        {c.telephone && (
+                        {c.tel && (
                           <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
-                            <Phone className="h-3 w-3" />{c.telephone}
+                            <Phone className="h-3 w-3" />{c.tel}
                           </p>
                         )}
                         <Button 
                           size="sm" 
-                          className="bg-blue-500 hover:bg-blue-600 w-full text-white py-1"
+                          className="bg-blue-600 hover:bg-blue-700 w-full text-white py-1"
                           onClick={() => handleAssignCoordinateur(c.id)}
                         >
-                           Assigner
+                          Assigner
                         </Button>
                       </div>
                     </div>
@@ -402,13 +519,18 @@ export default function SessionDetailPage({ params }) {
 
           {/* Liste formateurs */}
           <Card>
-            <CardHeader><CardTitle>Formateurs assignés</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5" />
+                Formateurs Disponibles
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               {formateurs?.length > 0 ? (
                 <Carousel
                   items={orderedFormateurs}
-                  maxVisible={4}
-                  perPage={4}
+                  maxVisible={5}
+                  perPage={5}
                   renderItem={(f) => {
                     const isAssigned = selectedFormateurs.includes(f.id);
                     return (
@@ -417,20 +539,41 @@ export default function SessionDetailPage({ params }) {
                           <Badge variant="secondary" className={isAssigned ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
                             {isAssigned ? 'Assigné' : 'Disponible'}
                           </Badge>
-                          <div className="flex items-center justify-center w-14 h-14 bg-orange-500 text-white rounded-full text-lg font-bold">
+                          <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full text-lg font-bold">
                             {f.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                           </div>
                           <h3 className="font-semibold text-sm">{f.name}</h3>
-                          <p className="text-xs text-blue-600 flex items-center justify-center gap-1"><Mail className="h-3 w-3" />{f.email}</p>
-                          {f.telephone && <p className="text-xs text-blue-600 flex items-center justify-center gap-1"><Phone className="h-3 w-3" />{f.telephone}</p>}
-                          <Button size="sm" className="bg-orange-500 hover:bg-orange-600 w-full text-white py-1" onClick={() => handleDownloadCV(f.id)}>
-                            <Download className="h-3 w-3 mr-1" /> Télécharger CV
+                          <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                            <Mail className="h-3 w-3" />{f.email}
+                          </p>
+                          {f.tel && (
+                            <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                              <Phone className="h-3 w-3" />{f.tel}
+                            </p>
+                          )}
+                          <Button 
+                            size="sm" 
+                            className="bg-orange-500 hover:bg-orange-600 w-full text-white py-1" 
+                            onClick={() => handleDownloadCV(f.id)}
+                          >
+                            <Download className="h-3 w-3 mr-1" /> CV
                           </Button>
                           {isAssigned ? (
-                            <Button size="sm" variant="destructive" className="w-full py-1" onClick={() => handleRemoveFormateur(f.id)}>Retirer</Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive" 
+                              className="w-full py-1" 
+                              onClick={() => handleRemoveFormateur(f.id)}
+                            >
+                              Retirer
+                            </Button>
                           ) : (
-                            <Button size="sm" className="bg-green-500 hover:bg-green-600 w-full text-white py-1" onClick={() => handleAcceptFormateur(f.id)}>
-                              <Check className="h-3 w-3 mr-1" /> Accepter
+                            <Button 
+                              size="sm" 
+                              className="bg-green-500 hover:bg-green-600 w-full text-white py-1" 
+                              onClick={() => handleAcceptFormateur(f.id)}
+                            >
+                              <Check className="h-3 w-3 mr-1" /> Assigner
                             </Button>
                           )}
                         </div>
@@ -451,23 +594,45 @@ export default function SessionDetailPage({ params }) {
         {/* Coordinateur actuel */}
         <div>
           <Card>
-            <CardHeader><CardTitle>Coordinateur Actuel</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Coordinateur Actuel
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               {session.coordinateur ? (
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="w-24 h-24 bg-blue-500 text-white rounded-full flex items-center justify-center text-2xl font-bold">
+                  <div className="flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-2xl font-bold">
                     {session.coordinateur.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                   </div>
                   <h3 className="text-xl font-bold">{session.coordinateur.name}</h3>
                   <p className="text-sm text-muted-foreground">Coordinateur Formation</p>
-                  <p className="text-sm text-blue-600 flex items-center gap-2"><Mail className="h-4 w-4" />{session.coordinateur.email}</p>
-                  {session.coordinateur.telephone && <p className="text-sm text-blue-600 flex items-center gap-2"><Phone className="h-4 w-4" />{session.coordinateur.telephone}</p>}
-                  {session.coordinateur.adresse && <p className="text-sm text-blue-600 flex items-center gap-2"><MapPin className="h-4 w-4" />{session.coordinateur.adresse}</p>}
-                  <Button variant="destructive" className="w-full" onClick={handleRemoveCoordinateur}>Retirer</Button>
+                  <p className="text-sm text-blue-600 flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    {session.coordinateur.email}
+                  </p>
+                  {session.coordinateur.tel && (
+                    <p className="text-sm text-blue-600 flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      {session.coordinateur.tel}
+                    </p>
+                  )}
+                  <Button 
+                    variant="destructive" 
+                    className="w-full" 
+                    onClick={handleRemoveCoordinateur}
+                  >
+                    Retirer le coordinateur
+                  </Button>
                 </div>
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <p className="text-muted-foreground mb-4">Aucun coordinateur assigné</p>
+                  <p className="text-sm text-muted-foreground">
+                    Sélectionnez un coordinateur dans la liste des disponibles
+                  </p>
                 </div>
               )}
             </CardContent>

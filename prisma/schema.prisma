@@ -26,7 +26,12 @@ model User {
   cv        String?  @db.Text
   role      Role     @default(FORMATEUR)
   status    UserStatus @default(INACTIVE)
-  specialite String?   @db.VarChar(150)  // ✅ ajout ici
+  specialite String?   @db.VarChar(150)
+  fonction String?   @db.VarChar(150)
+  cin       String?   @db.VarChar(20)
+  rib       String?   @db.VarChar(34)
+  banque    String?   @db.VarChar(200)
+  tel       String?   @db.VarChar(20)
   createdAt DateTime @default(now())
 
   fichesResponsable    FicheDePaie[] @relation("ResponsableFiches")
@@ -38,6 +43,8 @@ model User {
 
   @@index([email])
   @@index([role])
+  @@index([cin])
+  @@index([tel])
 }
 
 
@@ -48,12 +55,6 @@ model FicheDePaie {
   id             Int      @id @default(autoincrement())
   numMemoire     String   @unique @db.VarChar(100)
   nomResponsable String   @db.VarChar(200)
-  fonction       String   @db.VarChar(150)
-  classe         String   @db.VarChar(50)
-  specialite     String   @db.VarChar(150)
-  niveau         String   @db.VarChar(100)
-  promotion      String   @db.VarChar(100)
-  semestre       String   @db.VarChar(50)
   periode        String   @db.VarChar(150)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -69,15 +70,18 @@ model FicheDePaie {
   @@index([responsableId])
   @@index([coordinateurId])
   @@index([numMemoire])
-  @@index([specialite])
 }
 
 model Session {
   id          Int      @id @default(autoincrement())
   titre       String   @db.VarChar(255)
+  specialite String?   @db.VarChar(150)
   dateDebut   DateTime
   dateFin     DateTime
-  nbHeures    Float
+  classe      String?  @db.VarChar(50)
+  promotion   String?    @db.VarChar(50)
+  niveau      String?  @db.VarChar(50)
+  semestre    String?  @db.VarChar(50)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

@@ -1,14 +1,14 @@
 'use client';
-
+//app/responsable/sessions/[id]/edit/page.jsx
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X, Calendar, Clock, Users, Mail, Phone } from 'lucide-react';
+import { X, Calendar, Users, Mail, Phone, BookOpen } from 'lucide-react';
 
 const formatDateInput = (value) => {
   if (!value) return '';
@@ -28,7 +28,11 @@ export default function EditSessionPage() {
   const [titre, setTitre] = useState('');
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
-  const [nbHeures, setNbHeures] = useState('');
+  const [classe, setClasse] = useState('');
+  const [specialite, setSpecialite] = useState('');
+  const [promotion, setPromotion] = useState('');
+  const [niveau, setNiveau] = useState('');
+  const [semestre, setSemestre] = useState('');
   const [formateurIds, setFormateurIds] = useState([]);
   const [coordinateurId, setCoordinateurId] = useState('');
 
@@ -56,7 +60,11 @@ export default function EditSessionPage() {
         setTitre(sessionData.titre || '');
         setDateDebut(formatDateInput(sessionData.dateDebut));
         setDateFin(formatDateInput(sessionData.dateFin));
-        setNbHeures(sessionData.nbHeures ? String(sessionData.nbHeures) : '');
+        setClasse(sessionData.classe || '');
+        setSpecialite(sessionData.specialite || '');
+        setPromotion(sessionData.promotion || '');
+        setNiveau(sessionData.niveau || '');
+        setSemestre(sessionData.semestre || '');
         setFormateurIds(
           Array.isArray(sessionData.formateurs)
             ? sessionData.formateurs.map((f) => String(f.id))
@@ -121,9 +129,49 @@ export default function EditSessionPage() {
         return;
       }
 
-      const parsedHeures = Number(nbHeures);
-      if (Number.isNaN(parsedHeures) || parsedHeures <= 0) {
-        alert('Veuillez renseigner un nombre d’heures positif.');
+      // Validation des dates
+      const startDate = new Date(dateDebut);
+      const endDate = new Date(dateFin);
+      
+      if (endDate < startDate) {
+        alert('La date de fin doit être postérieure à la date de début.');
+        setSaving(false);
+        return;
+      }
+
+      // Validation de la longueur des champs
+      if (titre.length > 255) {
+        alert('Le titre ne doit pas dépasser 255 caractères.');
+        setSaving(false);
+        return;
+      }
+
+      if (classe && classe.length > 50) {
+        alert('La classe ne doit pas dépasser 50 caractères.');
+        setSaving(false);
+        return;
+      }
+
+      if (specialite && specialite.length > 150) {
+        alert('La spécialité ne doit pas dépasser 150 caractères.');
+        setSaving(false);
+        return;
+      }
+
+      if (promotion && promotion.length > 50) {
+        alert('La promotion ne doit pas dépasser 50 caractères.');
+        setSaving(false);
+        return;
+      }
+
+      if (niveau && niveau.length > 50) {
+        alert('Le niveau ne doit pas dépasser 50 caractères.');
+        setSaving(false);
+        return;
+      }
+
+      if (semestre && semestre.length > 50) {
+        alert('Le semestre ne doit pas dépasser 50 caractères.');
         setSaving(false);
         return;
       }
@@ -132,9 +180,13 @@ export default function EditSessionPage() {
         titre: titre.trim(),
         dateDebut,
         dateFin,
-        nbHeures: parsedHeures,
-        formateurIds,
-        coordinateurId: coordinateurId || null,
+        classe: classe || null,
+        specialite: specialite || null,
+        promotion: promotion || null,
+        niveau: niveau || null,
+        semestre: semestre || null,
+        formateurIds: formateurIds.map(id => Number(id)),
+        coordinateurId: coordinateurId ? Number(coordinateurId) : null,
       };
 
       const res = await fetch(`/api/responsable/sessions/${sessionId}`, {
@@ -184,15 +236,22 @@ export default function EditSessionPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Détails de la Formation */}
         <Card>
           <CardHeader>
-            <CardTitle>Détails de la Formation</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5" />
+              Informations de la Session
+            </CardTitle>
+            <CardDescription>
+              Tous les champs marqués d'un * sont obligatoires
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="titre" className="text-muted-foreground">
-                  Nom de la formation
+                  Titre de la session *
                 </Label>
                 <Input
                   id="titre"
@@ -201,13 +260,14 @@ export default function EditSessionPage() {
                   onChange={(e) => setTitre(e.target.value)}
                   placeholder="Ex: Développement Web Fullstack"
                   className="font-semibold"
+                  maxLength={255}
                   required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="dateDebut" className="text-muted-foreground">
-                  Date de début
+                  Date de début *
                 </Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -224,7 +284,7 @@ export default function EditSessionPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="dateFin" className="text-muted-foreground">
-                  Date de fin
+                  Date de fin *
                 </Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -240,30 +300,85 @@ export default function EditSessionPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nbHeures" className="text-muted-foreground">
-                  Heures totales
-                </Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="nbHeures"
-                    type="number"
-                    value={nbHeures}
-                    onChange={(e) => setNbHeures(e.target.value)}
-                    placeholder="120"
-                    className="pl-10 font-semibold"
-                    min={1}
-                    required
-                  />
-                </div>
+                <Label htmlFor="classe" className="text-muted-foreground">Classe</Label>
+                <Input
+                  id="classe"
+                  type="text"
+                  value={classe}
+                  onChange={(e) => setClasse(e.target.value)}
+                  placeholder="Ex: Classe A, Groupe 1"
+                  className="font-semibold"
+                  maxLength={50}
+                />
+            
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="specialite" className="text-muted-foreground">Spécialité</Label>
+                <Input
+                  id="specialite"
+                  type="text"
+                  value={specialite}
+                  onChange={(e) => setSpecialite(e.target.value)}
+                  placeholder="Ex: Informatique, Développement Web"
+                  className="font-semibold"
+                  maxLength={150}
+                />
+               
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="promotion" className="text-muted-foreground">Promotion</Label>
+                <Input
+                  id="promotion"
+                  type="text"
+                  value={promotion}
+                  onChange={(e) => setPromotion(e.target.value)}
+                  placeholder="Ex: Promotion 2024"
+                  className="font-semibold"
+                  maxLength={50}
+                />
+                
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="niveau" className="text-muted-foreground">Niveau</Label>
+                <Input
+                  id="niveau"
+                  type="text"
+                  value={niveau}
+                  onChange={(e) => setNiveau(e.target.value)}
+                  placeholder="Ex: Débutant, Intermédiaire, Avancé"
+                  className="font-semibold"
+                  maxLength={50}
+                />
+               
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="semestre" className="text-muted-foreground">Semestre</Label>
+                <Input
+                  id="semestre"
+                  type="text"
+                  value={semestre}
+                  onChange={(e) => setSemestre(e.target.value)}
+                  placeholder="Ex: S1, S2, Semestre 1"
+                  className="font-semibold"
+                  maxLength={50}
+                />
+                
               </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* Coordinateur */}
         <Card>
           <CardHeader>
             <CardTitle>Coordinateur</CardTitle>
+            <CardDescription>
+              Sélectionnez un coordinateur pour cette session (optionnel)
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {selectedCoordinateur ? (
@@ -286,10 +401,10 @@ export default function EditSessionPage() {
                       <Mail className="h-4 w-4" />
                       {selectedCoordinateur.email}
                     </p>
-                    {selectedCoordinateur.telephone && (
+                    {selectedCoordinateur.tel && (
                       <p className="text-sm flex items-center justify-center gap-2 text-blue-600">
                         <Phone className="h-4 w-4" />
-                        {selectedCoordinateur.telephone}
+                        {selectedCoordinateur.tel}
                       </p>
                     )}
                   </div>
@@ -327,6 +442,8 @@ export default function EditSessionPage() {
                             <div className="flex flex-col">
                               <span>{c.name}</span>
                               <span className="text-xs text-muted-foreground">{c.email}</span>
+
+
                             </div>
                           </div>
                         </SelectItem>
@@ -339,9 +456,13 @@ export default function EditSessionPage() {
           </CardContent>
         </Card>
 
+        {/* Formateurs */}
         <Card>
           <CardHeader>
             <CardTitle>Formateurs assignés</CardTitle>
+            <CardDescription>
+              Sélectionnez un ou plusieurs formateurs pour cette session
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {selectedFormateurs.length > 0 ? (
@@ -378,10 +499,10 @@ export default function EditSessionPage() {
                             <Mail className="h-3 w-3" />
                             {formateur.email}
                           </p>
-                          {formateur.telephone && (
+                          {formateur.tel && (
                             <p className="flex items-center justify-center gap-2 text-blue-600">
                               <Phone className="h-3 w-3" />
-                              {formateur.telephone}
+                              {formateur.tel}
                             </p>
                           )}
                         </div>
@@ -463,4 +584,3 @@ export default function EditSessionPage() {
     </div>
   );
 }
-
