@@ -5,34 +5,39 @@ import prisma from "@/lib/prisma"
 import fs from "fs/promises"
 import path from "path"
 
-// Utilise le token JWT fourni par NextAuth pour protéger les endpoints.
-// GET -> renvoie les infos publiques du user
-// PATCH -> met à jour name/email
-// PUT -> changement de mot de passe (currentPassword + newPassword)
-
-
-
-//récupération de l’utilisateur depuis le token
+// Récupération de l'utilisateur depuis le token
 async function getUserFromToken(req) {
-  //Vérifier l’identité de l’utilisateur grâce à un token JWT (NextAuth)
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
   if (!token) return null
   const id = Number(token.sub)
   if (!id) return null
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, email: true, role: true, status: true, createdAt: true, password: true, cv: true, specialite: true },
+    select: { 
+      id: true, 
+      name: true, 
+      email: true, 
+      role: true, 
+      status: true, 
+      createdAt: true, 
+      password: true, 
+      cv: true, 
+      specialite: true,
+      fonction: true,
+      cin: true,
+      rib: true,
+      banque: true,
+      tel: true
+    },
   })
   return user
 }
 
 export async function GET(req) {
   try {
-    //Vérifie si le token est valide (utilisateur connecté)
     const user = await getUserFromToken(req)
     if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
 
-    // sans mot de passe 
     const { password, ...safe } = user
     return NextResponse.json(safe)
   } catch (err) {
@@ -40,26 +45,29 @@ export async function GET(req) {
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
   }
 }
-// modifier le profil (name, email)
+
+// Modifier le profil
 export async function PATCH(req) {
   try {
-    //recupere l'utilisateur connecté
     const user = await getUserFromToken(req)
     if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+    
     const contentType = req.headers.get("content-type") || ""
-
     let updateData = {}
 
     if (contentType.includes("multipart/form-data")) {
-      // gérer upload de CV + champs texte
       const form = await req.formData()
       const name = form.get("name") || undefined
       const email = form.get("email") || undefined
       const specialite = form.get("specialite") || undefined
+      const fonction = form.get("fonction") || undefined
+      const cin = form.get("cin") || undefined
+      const rib = form.get("rib") || undefined
+      const banque = form.get("banque") || undefined
+      const tel = form.get("tel") || undefined
       const cvFile = form.get("cv")
 
-
-      // Only accept name/email when role is RESPONSABLE
+      // RESPONSABLE: name & email
       if (user.role === "RESPONSABLE") {
         if (name) updateData.name = String(name)
         if (email) {
@@ -71,11 +79,26 @@ export async function PATCH(req) {
         }
       }
 
-      // role-specific: specialite only for FORMATEUR
-      if (user.role === "FORMATEUR" && specialite) updateData.specialite = String(specialite)
+      // COORDINATEUR: fonction, cin, rib, banque, tel
+      if (user.role === "COORDINATEUR") {
+        if (fonction) updateData.fonction = String(fonction)
+        if (cin) updateData.cin = String(cin)
+        if (rib) updateData.rib = String(rib)
+        if (banque) updateData.banque = String(banque)
+        if (tel) updateData.tel = String(tel)
+      }
 
+      // FORMATEUR: specialite, cin, rib, banque, tel
+      if (user.role === "FORMATEUR") {
+        if (specialite) updateData.specialite = String(specialite)
+        if (cin) updateData.cin = String(cin)
+        if (rib) updateData.rib = String(rib)
+        if (banque) updateData.banque = String(banque)
+        if (tel) updateData.tel = String(tel)
+      }
+
+      // CV pour tous les rôles
       if (cvFile && typeof cvFile === "object" && cvFile.size) {
-        // sauvegarder le fichier dans /public/uploads
         const uploadsDir = path.join(process.cwd(), "public", "uploads")
         await fs.mkdir(uploadsDir, { recursive: true })
         const filename = `${Date.now()}-${cvFile.name}`
@@ -86,9 +109,8 @@ export async function PATCH(req) {
       }
     } else {
       const body = await req.json()
-      const { name, email, specialite } = body
+      const { name, email, specialite, fonction, cin, rib, banque, tel } = body
 
-      // Only require name/email when updating a RESPONSABLE
       if (user.role === "RESPONSABLE") {
         if (!name || !email) {
           return NextResponse.json({ error: "Nom et email requis" }, { status: 400 })
@@ -101,31 +123,62 @@ export async function PATCH(req) {
 
         updateData.name = name
         updateData.email = email
-      } else {
-        // For FORMATEUR and COORDINATEUR we accept only their allowed fields
-        if (user.role === "FORMATEUR" && specialite) updateData.specialite = specialite
+      } else if (user.role === "COORDINATEUR") {
+        if (fonction) updateData.fonction = fonction
+        if (cin) updateData.cin = cin
+        if (rib) updateData.rib = rib
+        if (banque) updateData.banque = banque
+        if (tel) updateData.tel = tel
+      } else if (user.role === "FORMATEUR") {
+        if (specialite) updateData.specialite = specialite
+        if (cin) updateData.cin = cin
+        if (rib) updateData.rib = rib
+        if (banque) updateData.banque = banque
+        if (tel) updateData.tel = tel
       }
     }
 
-    // Restreindre ce qui peut être modifié selon le rôle
+    // Filtrer les champs autorisés par rôle
+    const allowedFields = {}
+    
     if (user.role === "RESPONSABLE") {
-      // Responsable: only name & email
-      const allowed = { name: updateData.name, email: updateData.email }
-      updateData = Object.fromEntries(Object.entries(allowed).filter(([, v]) => v !== undefined))
+      allowedFields.name = updateData.name
+      allowedFields.email = updateData.email
     } else if (user.role === "COORDINATEUR") {
-      // Coordinateur: allow only cv
-      const allowed = { cv: updateData.cv }
-      updateData = Object.fromEntries(Object.entries(allowed).filter(([, v]) => v !== undefined))
+      allowedFields.fonction = updateData.fonction
+      allowedFields.cin = updateData.cin
+      allowedFields.rib = updateData.rib
+      allowedFields.banque = updateData.banque
+      allowedFields.tel = updateData.tel
+      allowedFields.cv = updateData.cv
     } else if (user.role === "FORMATEUR") {
-      // Formateur: allow specialite and cv only
-      const allowed = { specialite: updateData.specialite, cv: updateData.cv }
-      updateData = Object.fromEntries(Object.entries(allowed).filter(([, v]) => v !== undefined))
+      allowedFields.specialite = updateData.specialite
+      allowedFields.cin = updateData.cin
+      allowedFields.rib = updateData.rib
+      allowedFields.banque = updateData.banque
+      allowedFields.tel = updateData.tel
+      allowedFields.cv = updateData.cv
     }
+
+    updateData = Object.fromEntries(Object.entries(allowedFields).filter(([, v]) => v !== undefined))
 
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: updateData,
-      select: { id: true, name: true, email: true, role: true, createdAt: true, specialite: true, cv: true },
+      select: { 
+        id: true, 
+        name: true, 
+        email: true, 
+        role: true, 
+        createdAt: true, 
+        specialite: true, 
+        fonction: true,
+        cin: true,
+        rib: true,
+        banque: true,
+        tel: true,
+        cv: true 
+      },
     })
 
     return NextResponse.json({ message: "Profil mis à jour", user: updated })
