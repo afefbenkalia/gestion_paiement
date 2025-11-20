@@ -1,4 +1,5 @@
 "use client"
+// src/app/coordinateur/profile/page.jsx
 import { useEffect, useState } from "react"
 import { tunisianBanks } from "@/data/tunisianBanks"
 
@@ -12,6 +13,7 @@ export default function CoordinateurProfilePage() {
     banque: "",
     tel: ""
   })
+  const [formErrors, setFormErrors] = useState({})
   const [cvFile, setCvFile] = useState(null)
   const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" })
   const [msg, setMsg] = useState(null)
@@ -48,6 +50,69 @@ export default function CoordinateurProfilePage() {
     return () => (mounted = false)
   }, [])
 
+  // Fonctions de validation côté client
+  const validateCIN = (cin) => {
+    if (!cin) return "" // Champ optionnel
+    const cinRegex = /^\d{8}$/
+    return cinRegex.test(cin) ? "" : "Le CIN doit contenir exactement 8 chiffres"
+  }
+
+  const validateRIB = (rib) => {
+    if (!rib) return "" // Champ optionnel
+    const ribRegex = /^\d{20}$/
+    return ribRegex.test(rib) ? "" : "Le RIB doit contenir exactement 20 chiffres"
+  }
+
+  const validateForm = () => {
+    const errors = {}
+    const cinError = validateCIN(profileForm.cin)
+    const ribError = validateRIB(profileForm.rib)
+    
+    if (cinError) errors.cin = cinError
+    if (ribError) errors.rib = ribError
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleCINChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 8) // Seulement chiffres, max 8
+    setProfileForm({ ...profileForm, cin: value })
+    
+    // Validation en temps réel
+    if (value) {
+      const error = validateCIN(value)
+      setFormErrors(prev => ({
+        ...prev,
+        cin: error
+      }))
+    } else {
+      setFormErrors(prev => ({
+        ...prev,
+        cin: ""
+      }))
+    }
+  }
+
+  const handleRIBChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 20) // Seulement chiffres, max 20
+    setProfileForm({ ...profileForm, rib: value })
+    
+    // Validation en temps réel
+    if (value) {
+      const error = validateRIB(value)
+      setFormErrors(prev => ({
+        ...prev,
+        rib: error
+      }))
+    } else {
+      setFormErrors(prev => ({
+        ...prev,
+        rib: ""
+      }))
+    }
+  }
+
   const handleBankChange = (e) => {
     const value = e.target.value
     setProfileForm({ ...profileForm, banque: value })
@@ -73,6 +138,13 @@ export default function CoordinateurProfilePage() {
   async function submitProfile(e) {
     e.preventDefault()
     setMsg(null)
+    
+    // Validation finale avant soumission
+    if (!validateForm()) {
+      setMsg({ type: "error", text: "Veuillez corriger les erreurs dans le formulaire" })
+      return
+    }
+
     try {
       const formData = new FormData()
       Object.keys(profileForm).forEach(key => {
@@ -208,7 +280,7 @@ export default function CoordinateurProfilePage() {
                     <h2 className="text-lg font-semibold text-gray-900">Modifier les Informations</h2>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
+                      <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">Fonction</label>
                         <input
                           type="text"
@@ -220,25 +292,43 @@ export default function CoordinateurProfilePage() {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">CIN</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          CIN
+                          <span className="text-xs text-gray-500 ml-1">(8 chiffres)</span>
+                        </label>
                         <input
                           type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                            formErrors.cin ? "border-red-300" : "border-gray-300"
+                          }`}
                           value={profileForm.cin}
-                          onChange={(e) => setProfileForm({ ...profileForm, cin: e.target.value })}
-                          placeholder="Numéro CIN"
+                          onChange={handleCINChange}
+                          placeholder="12345678"
+                          maxLength={8}
                         />
+                        {formErrors.cin && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.cin}</p>
+                        )}
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">RIB</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          RIB
+                          <span className="text-xs text-gray-500 ml-1">(20 chiffres)</span>
+                        </label>
                         <input
                           type="text"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                            formErrors.rib ? "border-red-300" : "border-gray-300"
+                          }`}
                           value={profileForm.rib}
-                          onChange={(e) => setProfileForm({ ...profileForm, rib: e.target.value })}
-                          placeholder="Numéro RIB"
+                          onChange={handleRIBChange}
+                          placeholder="12345678901234567890"
+                          maxLength={20}
                         />
+                        {formErrors.rib && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.rib}</p>
+                        )}
                       </div>
 
                       <div className="relative">
@@ -294,7 +384,12 @@ export default function CoordinateurProfilePage() {
                     <div className="flex justify-end pt-4">
                       <button 
                         type="submit"
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium"
+                        disabled={Object.keys(formErrors).some(key => formErrors[key])}
+                        className={`px-6 py-2 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium ${
+                          Object.keys(formErrors).some(key => formErrors[key])
+                            ? "bg-gray-400 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700"
+                        }`}
                       >
                         Enregistrer les modifications
                       </button>

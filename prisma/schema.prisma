@@ -28,10 +28,10 @@ model User {
   status    UserStatus @default(INACTIVE)
   specialite String?   @db.VarChar(150)
   fonction String?   @db.VarChar(150)
-  cin       String?   @db.VarChar(20)
-  rib       String?   @db.VarChar(34)
+  cin       String?   @db.VarChar(8)
+  rib       String?   @db.VarChar(20)
   banque    String?   @db.VarChar(200)
-  tel       String?   @db.VarChar(20)
+  tel       String?   @db.VarChar(8)
   createdAt DateTime @default(now())
 
   fichesResponsable    FicheDePaie[] @relation("ResponsableFiches")

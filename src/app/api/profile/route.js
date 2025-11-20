@@ -33,6 +33,19 @@ async function getUserFromToken(req) {
   return user
 }
 
+// Fonctions de validation
+function validateCIN(cin) {
+  if (!cin) return true // Champ optionnel
+  const cinRegex = /^\d{8}$/
+  return cinRegex.test(cin)
+}
+
+function validateRIB(rib) {
+  if (!rib) return true // Champ optionnel
+  const ribRegex = /^\d{20}$/
+  return ribRegex.test(rib)
+}
+
 export async function GET(req) {
   try {
     const user = await getUserFromToken(req)
@@ -66,6 +79,14 @@ export async function PATCH(req) {
       const banque = form.get("banque") || undefined
       const tel = form.get("tel") || undefined
       const cvFile = form.get("cv")
+
+      // Validation CIN et RIB
+      if (cin && !validateCIN(cin)) {
+        return NextResponse.json({ error: "Le CIN doit contenir exactement 8 chiffres" }, { status: 400 })
+      }
+      if (rib && !validateRIB(rib)) {
+        return NextResponse.json({ error: "Le RIB doit contenir exactement 20 chiffres" }, { status: 400 })
+      }
 
       // RESPONSABLE: name & email
       if (user.role === "RESPONSABLE") {
@@ -110,6 +131,14 @@ export async function PATCH(req) {
     } else {
       const body = await req.json()
       const { name, email, specialite, fonction, cin, rib, banque, tel } = body
+
+      // Validation CIN et RIB
+      if (cin && !validateCIN(cin)) {
+        return NextResponse.json({ error: "Le CIN doit contenir exactement 8 chiffres" }, { status: 400 })
+      }
+      if (rib && !validateRIB(rib)) {
+        return NextResponse.json({ error: "Le RIB doit contenir exactement 20 chiffres" }, { status: 400 })
+      }
 
       if (user.role === "RESPONSABLE") {
         if (!name || !email) {
