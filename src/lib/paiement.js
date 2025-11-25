@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { DEFAULT_SYSTEM_PARAMETERS } from '@/data/systemParameters';
 
 const safeNumber = (value, fallback = 0) => {
@@ -13,31 +15,19 @@ const clampNonNegative = (value) => {
   return parsed < 0 ? 0 : parsed;
 };
 
-export function getSystemParameters(overrides = {}) {
-  const resolved = {
-    prixHeureFormation:
-      overrides.prixHeureFormation ??
-      process.env.PRIX_HEURE_FORMATION ??
-      process.env.NEXT_PUBLIC_PRIX_HEURE_FORMATION,
-    prixCoordinationFixe:
-      overrides.prixCoordinationFixe ??
-      process.env.PRIX_COORDINATION_FIXE ??
-      process.env.NEXT_PUBLIC_PRIX_COORDINATION_FIXE,
-    tva:
-      overrides.tva ??
-      process.env.TVA_TAUX ??
-      process.env.NEXT_PUBLIC_TVA_TAUX,
-  };
-
-  return {
-    prixHeureFormation: clampNonNegative(
-      resolved.prixHeureFormation ?? DEFAULT_SYSTEM_PARAMETERS.prixHeureFormation
-    ),
-    prixCoordinationFixe: clampNonNegative(
-      resolved.prixCoordinationFixe ?? DEFAULT_SYSTEM_PARAMETERS.prixCoordinationFixe
-    ),
-    tva: clampNonNegative(resolved.tva ?? DEFAULT_SYSTEM_PARAMETERS.tva),
-  };
+/**
+ * Lit les paramètres système depuis le fichier JSON local.
+ * En cas d’erreur, retourne les valeurs par défaut.
+ */
+export function getSystemParameters() {
+  try {
+    const filePath = path.join(process.cwd(), 'src/data/systemParameters.json');
+    const raw = fs.readFileSync(filePath, 'utf8');
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Impossible de lire systemParameters.json — fallback', e);
+    return DEFAULT_SYSTEM_PARAMETERS;
+  }
 }
 
 export function formatPeriode(dateDebut, dateFin) {
@@ -224,4 +214,3 @@ export const SESSION_PAIEMENT_INCLUDE = {
   },
   fichesSession: true,
 };
-

@@ -529,8 +529,8 @@ export default function SessionDetailPage({ params }) {
               {formateurs?.length > 0 ? (
                 <Carousel
                   items={orderedFormateurs}
-                  maxVisible={5}
-                  perPage={5}
+                  maxVisible={4}
+                  perPage={4}
                   renderItem={(f) => {
                     const isAssigned = selectedFormateurs.includes(f.id);
                     return (

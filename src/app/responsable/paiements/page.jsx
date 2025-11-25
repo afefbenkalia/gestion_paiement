@@ -20,6 +20,7 @@ export default function PaiementsPage() {
   const [systemParameters, setSystemParameters] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchSessions();
@@ -46,6 +47,27 @@ export default function PaiementsPage() {
     }
   };
 
+  const handleSaveParameters = async () => {
+    if (!systemParameters) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/responsable/paiment', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(systemParameters),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la sauvegarde');
+      // recharge les sessions avec les nouveaux paramètres
+      fetchSessions();
+    } catch (e) {
+      console.error(e);
+      alert('Erreur lors de la sauvegarde des paramètres');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="mb-6 flex flex-col gap-2">
@@ -58,37 +80,76 @@ export default function PaiementsPage() {
 
         {systemParameters && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <Card className="shadow-sm">
-              <CardContent className="py-4">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Users className="h-4 w-4 text-primary" />
-                  Prix horaire formateur
-                </p>
-                <p className="text-xl font-semibold">
-                  {formatAmount(systemParameters.prixHeureFormation)}
-                </p>
-              </CardContent>
+            {/* Prix horaire formateur */}
+            <Card className="shadow-sm p-4">
+              <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Prix horaire formateur
+              </p>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                className="border rounded px-2 py-1 w-full"
+                value={systemParameters.prixHeureFormation}
+                onChange={(e) =>
+                  setSystemParameters({
+                    ...systemParameters,
+                    prixHeureFormation: Number(e.target.value),
+                  })
+                }
+              />
             </Card>
-            <Card className="shadow-sm">
-              <CardContent className="py-4">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <ClipboardCheck className="h-4 w-4 text-primary" />
-                  Coordination par session
-                </p>
-                <p className="text-xl font-semibold">
-                  {formatAmount(systemParameters.prixCoordinationFixe)}
-                </p>
-              </CardContent>
+
+            {/* Coordination par session */}
+            <Card className="shadow-sm p-4">
+              <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                <ClipboardCheck className="h-4 w-4 text-primary" />
+                Coordination par session
+              </p>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                className="border rounded px-2 py-1 w-full"
+                value={systemParameters.prixCoordinationFixe}
+                onChange={(e) =>
+                  setSystemParameters({
+                    ...systemParameters,
+                    prixCoordinationFixe: Number(e.target.value),
+                  })
+                }
+              />
             </Card>
-            <Card className="shadow-sm">
-              <CardContent className="py-4">
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Euro className="h-4 w-4 text-primary" />
-                  TVA appliquée
-                </p>
-                <p className="text-xl font-semibold">{systemParameters.tva}%</p>
-              </CardContent>
+
+            {/* TVA appliquée */}
+            <Card className="shadow-sm p-4">
+              <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                <Euro className="h-4 w-4 text-primary" />
+                TVA appliquée (%)
+              </p>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step={0.1}
+                className="border rounded px-2 py-1 w-full"
+                value={systemParameters.tva}
+                onChange={(e) =>
+                  setSystemParameters({
+                    ...systemParameters,
+                    tva: Number(e.target.value),
+                  })
+                }
+              />
             </Card>
+
+            {/* Bouton sauvegarder */}
+            <div className="col-span-3 flex justify-end mt-2">
+              <Button onClick={handleSaveParameters} disabled={saving}>
+                {saving ? 'Enregistrement...' : '💾 Enregistrer'}
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -145,12 +206,8 @@ export default function PaiementsPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs uppercase text-muted-foreground tracking-wide">
-                        Total net
-                      </p>
-                      <p className="text-xl font-semibold">
-                        {formatAmount(session.summary.totalNet)}
-                      </p>
+                      <p className="text-xs uppercase text-muted-foreground tracking-wide">Total net</p>
+                      <p className="text-xl font-semibold">{formatAmount(session.summary.totalNet)}</p>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -168,12 +225,8 @@ export default function PaiementsPage() {
                         </p>
                       </div>
                       <div className="p-3 rounded-lg bg-slate-50">
-                        <p className="text-xs text-muted-foreground uppercase">
-                          Fiches manquantes
-                        </p>
-                        <p className="text-lg font-semibold">
-                          {session.summary.pendingFormateurs || 0}
-                        </p>
+                        <p className="text-xs text-muted-foreground uppercase">Fiches manquantes</p>
+                        <p className="text-lg font-semibold">{session.summary.pendingFormateurs || 0}</p>
                       </div>
                     </div>
                     <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -198,4 +251,3 @@ export default function PaiementsPage() {
     </div>
   );
 }
-
