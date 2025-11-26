@@ -58,15 +58,15 @@ export function computeFormateurAmounts({ totalTutorat = 0, totalRegroupement = 
   const totalHeures = regroupement + tutorat;
   const montantBrut = totalHeures * finalParams.prixHeureFormation;
   const retenue = montantBrut * (finalParams.tva / 100);
-  const montantNet = montantBrut + retenue;
+  const montantNet = montantBrut - retenue;
   return { totalHeures, montantBrut, montantNet };
 }
 
 export function computeCoordinateurAmounts(params) {
   const finalParams = params ?? getSystemParameters();
   const montantBrut = finalParams.prixCoordinationFixe;
-  const retenue = montantBrut * (finalParams.tva / 100);
-  const montantNet = montantBrut + retenue;
+  const retenue = montantBrut * ((finalParams.tva / 100));
+  const montantNet = montantBrut - retenue;
   return { montantBrut, montantNet };
 }
 

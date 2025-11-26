@@ -6,44 +6,96 @@ writtenNumber.defaults.lang = 'fr';
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 20,
     fontSize: 10,
     fontFamily: 'Helvetica',
   },
-  header: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 20,
-    fontFamily: 'Helvetica-Bold',
-  },
   section: {
-    marginBottom: 15,
+    marginBottom: 8,
   },
+  headerSection: {
+    width: '100%',
+    paddingBottom: 6,
+    marginBottom: 10,
+  },
+  // Styles de tableau unifiés
   table: {
     display: 'table',
-    width: 'auto',
+    width: '100%',
     borderStyle: 'solid',
     borderWidth: 1,
     borderRightWidth: 0,
     borderBottomWidth: 0,
   },
   tableRow: {
-    margin: 'auto',
     flexDirection: 'row',
+    width: '100%',
   },
   tableCol: {
-    width: '25%',
+    width: '25%', // 100% / 4 colonnes = 25%
     borderStyle: 'solid',
     borderWidth: 1,
     borderLeftWidth: 0,
     borderTopWidth: 0,
+    minHeight: 30,
   },
-  tableColHeader: {
-    width: '16.66%',
+  tableColFive: {
+    width: '20%',
     borderStyle: 'solid',
     borderWidth: 1,
     borderLeftWidth: 0,
     borderTopWidth: 0,
+    minHeight: 30,
+  },
+  // Style pour le tableau montants (6 colonnes)
+  tableColHeader: {
+    width: '16.66%', // 100% / 6 colonnes = 16.66%
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    minHeight: 30,
+  },
+  // Style pour le tableau avec 3 colonnes
+  tableColThree: {
+    width: '33.33%', // 100% / 3 colonnes = 33.33%
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    minHeight: 30,
+  },
+  tableColTwoThirds: {
+    width: '66.66%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    minHeight: 30,
+  },
+  tableColSeven: {
+    width: '14.2857%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    minHeight: 30,
+  },
+  tableColTen: {
+    width: '10%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    minHeight: 30,
+  },
+  tableColEight: {
+    width: '12.5%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    minHeight: 30,
   },
   tableCell: {
     margin: 'auto',
@@ -51,16 +103,89 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     fontSize: 10,
     padding: 5,
+    textAlign: 'center',
+    width: '100%',
+    wordBreak: 'break-all',
+  },
+  tableCellBold: {
+    fontFamily: 'Helvetica-Bold',
   },
   tableHeader: {
-    backgroundColor: '#f0f0f0',
     fontFamily: 'Helvetica-Bold',
+  },
+  // Styles pour les autres composants
+  infoGrid: {
+    marginBottom: 15,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 5,
+  },
+  infoLabel: {
+    fontFamily: 'Helvetica-Bold',
+    width: 150,
   },
   signatureSection: {
     marginTop: 30,
     paddingTop: 20,
-    borderTop: 1,
-    borderTopColor: '#000',
+  },
+  inlineRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  label: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    marginRight: 4,
+  },
+  value: {
+    fontSize: 10,
+    marginRight: 12,
+  },
+  memoInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  memoNumber: {
+    fontSize: 10,
+  },
+  memoDate: {
+    fontSize: 10,
+  },
+  documentHeaderContainer: {
+    width: '100%',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#000',
+    padding: 4,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  documentHeaderTitleBox: {
+    borderWidth: 1,
+    borderColor: '#000',
+    padding: 12,
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  documentHeaderTitleText: {
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    letterSpacing: 0.5,
+  },
+  documentHeaderMetaSmall: {
+    borderWidth: 1,
+    borderColor: '#000',
+    padding: 4,
+    width: 80,
+  },
+  documentHeaderMetaSmallLine: {
+    fontSize: 7,
   },
 });
 
@@ -91,73 +216,190 @@ const amountToWords = (amount) => {
   }
 };
 
-// Fonction pour la formation
+const formatRib = (rib) => {
+  try {
+    if (!rib) return '';
+    const clean = String(rib).replace(/\s+/g, '');
+    // Group digits in blocks of 4 with spaces to enable wrapping
+    return clean.replace(/(.{4})/g, '$1 ').trim();
+  } catch {
+    return String(rib || '');
+  }
+};
+
+const renderDocumentHeader = (title) => (
+  <View style={styles.documentHeaderContainer}>
+    <View style={styles.documentHeaderTitleBox}>
+      <Text style={styles.documentHeaderTitleText}>{title}</Text>
+    </View>
+    <View style={styles.documentHeaderMetaSmall}>
+      <Text style={styles.documentHeaderMetaSmallLine}>Réf :</Text>
+      <Text style={styles.documentHeaderMetaSmallLine}>Version : </Text>
+      <Text style={styles.documentHeaderMetaSmallLine}>Date d'application :</Text>
+      <Text style={styles.documentHeaderMetaSmallLine}>
+        {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+      </Text>
+    </View>
+  </View>
+);
+
 export async function generateFormationPDF(session, fiche, formateur) {
-  const retenue = (fiche.montantNet ?? 0) - (fiche.montantBrut ?? 0);
+  const retenue = (fiche.montantBrut ?? 0) - (fiche.montantNet ?? 0);
+  const periodeParts = (session.periode || '').split('au').map((part) => part.trim());
+  const periodeStart = periodeParts[0] || '...............';
+  const periodeEnd = periodeParts[1] || '...............';
   
   const MyDocument = () => (
     <Document>
-      <Page size="A4" style={styles.page}>
-        <Text style={styles.header}>MEMOIRE INDIVIDUELLE : FORMATION</Text>
-        
-        <View style={styles.section}>
-          <Text>N° Mémoire : {fiche.numMemoire || 'NON-ATTRIBUÉ'}</Text>
-          <Text>Date Mémoire : {formatDate(fiche.updatedAt)}</Text>
+      <Page size="A4" orientation="landscape" style={styles.page}>
+        {renderDocumentHeader('MEMOIRE INDIVIDUELLE : FORMATION')}
+
+        {/* Informations mémoire */}
+        <View style={styles.memoInfo}>
+          <Text style={styles.memoNumber}>
+            <Text style={styles.label}>N° Mémoire :</Text> {fiche.numMemoire || '...............'}
+          </Text>
+          <Text style={styles.memoDate}>
+            <Text style={styles.label}>Date Mémoire :</Text> {formatDate(fiche.updatedAt) || '...............'}
+          </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text>Je soussigné(e) Mr (Mme) {fiche.nomResponsable || 'Le Responsable'} - Fonction : {formateur?.fonction || 'Formateur'}</Text>
-          <Text>Classe : {session.classe || ''} - Spécialité : {session.specialite || ''}</Text>
-          <Text>Promotion : {session.promotion || ''} - Niveau : {session.niveau || ''} - Semestre : {session.semestre || ''}</Text>
-          <Text>Durant la période : {session.periode || ''}</Text>
+        {/* Section certification */}
+        <View style={[styles.section, styles.headerSection]}>
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>Je soussigné(e) Mr (Mme)</Text>
+            <Text style={styles.value}>{fiche.nomResponsable || '.............................'}</Text>
+            <Text style={styles.label}>Fonction</Text>
+            <Text style={styles.value}>.................................</Text>
+            <Text style={styles.label}>De</Text>
+            <Text style={styles.value}>........................................</Text>
+            <Text>certifie que la formation relative a :</Text>
+          </View>
         </View>
 
+        {/* Informations formation */}
+        <View style={styles.section}>
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>Classe</Text>
+            <Text style={styles.value}>{session.classe || '.............................'}</Text>
+            <Text style={styles.label}>Spécialité</Text>
+            <Text style={styles.value}>{session.specialite || '.............................'}</Text>
+            <Text style={styles.label}>Promotion</Text>
+            <Text style={styles.value}>{session.promotion || '.............................'}</Text>
+            <Text style={styles.label}>Niveau</Text>
+            <Text style={styles.value}>{session.niveau || '..................................'}</Text>
+            <Text style={styles.label}>Semestre</Text>
+            <Text style={styles.value}>{session.semestre || '....................................'}</Text>
+          </View>
+          
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>durant la période : Du</Text>
+            <Text style={styles.value}>{periodeStart}</Text>
+            <Text style={styles.label}>Au</Text>
+            <Text style={styles.value}>{periodeEnd}</Text>
+          </View>
+          
+        </View>
+
+        {/* Tableau formateur - CORRIGÉ */}
         <View style={styles.section}>
           <Text>A été effectuée par l'enseignant(e) :</Text>
+
           <View style={styles.table}>
+            {/* En-tête du tableau formateur */}
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.tableCol, styles.tableCell]}>Nom et Prénom</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>N° CIN</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>RIB</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Banque</Text>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>Nom et Prénom</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>N° CIN</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>RIB</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>Banque</Text>
+              </View>
             </View>
+            {/* Ligne de données du tableau formateur */}
             <View style={styles.tableRow}>
-              <Text style={[styles.tableCol, styles.tableCell]}>{formateur?.name || 'Non renseigné'}</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{formateur?.cin || ''}</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{formateur?.rib || ''}</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{formateur?.banque || ''}</Text>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>{formateur?.name || '-'}</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>{formateur?.cin || '-'}</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>{formateur?.rib || '-'}</Text>
+              </View>
+              <View style={styles.tableCol}>
+                <Text style={styles.tableCell}>{formateur?.banque || '-'}</Text>
+              </View>
             </View>
           </View>
         </View>
 
+        {/* Tableau montants - CORRIGÉ */}
         <View style={styles.section}>
+          <Text>Et ce selon les informations ci-dessous :</Text>
           <View style={styles.table}>
+            {/* En-tête du tableau montants */}
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>Total regroupement</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>Total tutorat</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>Total heures</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>Montant Brut</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>Retenue</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>Montant Net</Text>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>Total regroupement</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>Total tutorat</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>Total heures</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>Montant Brut</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>Retenue</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>Montant Net</Text>
+              </View>
+            </View>
+            {/* Ligne de données du tableau montants */}
+            <View style={styles.tableRow}>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>{(fiche.totalRegroupement ?? 0).toString()}</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>{(fiche.totalTutorat ?? 0).toString()}</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>{(fiche.totalHeures ?? 0).toString()}</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>{(fiche.montantBrut ?? 0).toFixed(3)} TND</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>{(retenue ?? 0).toFixed(3)} TND</Text>
+              </View>
+              <View style={styles.tableColHeader}>
+                <Text style={styles.tableCell}>{(fiche.montantNet ?? 0).toFixed(3)} TND</Text>
+              </View>
             </View>
             <View style={styles.tableRow}>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>{(fiche.totalRegroupement ?? 0).toString()}</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>{(fiche.totalTutorat ?? 0).toString()}</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>{(fiche.totalHeures ?? 0).toString()}</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>{(fiche.montantBrut ?? 0).toFixed(3)} TND</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>{retenue.toFixed(3)} TND</Text>
-              <Text style={[styles.tableColHeader, styles.tableCell]}>{(fiche.montantNet ?? 0).toFixed(3)} TND</Text>
+              <View style={styles.tableColThree}>
+                <Text style={[styles.tableCell, styles.tableCellBold]}>Montant en toutes lettres</Text>
+              </View>
+              <View style={styles.tableColTwoThirds}>
+                <Text style={styles.tableCell}>{amountToWords(fiche.montantBrut ?? 0)}</Text>
+              </View>
             </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text>Montant en toutes lettres : {amountToWords(fiche.montantNet ?? 0)}</Text>
-        </View>
-
+        {/* Signatures */}
         <View style={styles.signatureSection}>
-          <Text>Visa et Cachet du directeur de l'établissement : ________________________________</Text>
-          <Text>Signature de l'enseignant(e)/formateur : ________________________________</Text>
+          <View style={styles.section}><Text>Visa et Cachet du directeur de l'établissement : ................</Text></View>
+          <View style={styles.section}><Text>Signature de l'enseignant(e)/formateur :..............</Text></View>
         </View>
       </Page>
     </Document>
@@ -167,69 +409,142 @@ export async function generateFormationPDF(session, fiche, formateur) {
   return pdfStream;
 }
 
-// Fonction pour la coordination
+// Fonction pour la coordination - CORRIGÉE
 export async function generateCoordinationPDF(session, fiche, coordinateur) {
-  const retenue = (fiche.montantNet ?? 0) - (fiche.montantBrut ?? 0);
+  const retenue = (fiche.montantBrut ?? 0) - (fiche.montantNet ?? 0);
   
   const MyDocument = () => (
     <Document>
-      <Page size="A4" style={styles.page}>
-        <Text style={styles.header}>MEMOIRE INDIVIDUELLE : COORDINATION</Text>
-        
-        <View style={styles.section}>
-          <Text>N° Mémoire : {fiche.numMemoire || 'NON-ATTRIBUÉ'}</Text>
-          <Text>Date Mémoire : {formatDate(fiche.updatedAt)}</Text>
+      <Page size="A4" orientation="landscape" style={styles.page}>
+        {renderDocumentHeader('MEMOIRE INDIVIDUELLE : COORDINATION')}
+
+        {/* Informations mémoire */}
+        <View style={styles.memoInfo}>
+          <Text style={styles.memoNumber}>
+            <Text style={styles.label}>N° Mémoire :</Text> {fiche.numMemoire || '...............'}
+          </Text>
+          <Text style={styles.memoDate}>
+            <Text style={styles.label}>Date Mémoire :</Text> {formatDate(fiche.updatedAt) || '...............'}
+          </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text>Je soussigné(e) Mr (Mme) {fiche.nomResponsable || 'Le Responsable'} - Fonction : Responsable</Text>
-          <Text>Classe : {session.classe || ''} - Spécialité : {session.specialite || ''}</Text>
-          <Text>Promotion : {session.promotion || ''} - Niveau : {session.niveau || ''} - Semestre : {session.semestre || ''}</Text>
-          <Text>Durant la période : {session.periode || ''}</Text>
+        {/* Section certification */}
+        <View style={[styles.section, styles.headerSection]}>
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>Je soussigné(e) Mr (Mme)</Text>
+            <Text style={styles.value}>{fiche.nomResponsable || '.............................'}</Text>
+            <Text style={styles.label}>Fonction</Text>
+            <Text style={styles.value}>.................................</Text>
+            <Text style={styles.label}>De</Text>
+            <Text style={styles.value}>........................................</Text>
+            <Text>certifie que la coordination relative a :</Text>
+          </View>
         </View>
 
+        {/* Informations formation */}
         <View style={styles.section}>
-          <Text>A été effectuée par le coordinateur :</Text>
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>Classe</Text>
+            <Text style={styles.value}>{session.classe || '.............................'}</Text>
+            <Text style={styles.label}>Spécialité</Text>
+            <Text style={styles.value}>{session.specialite || '.............................'}</Text>
+            <Text style={styles.label}>Promotion</Text>
+            <Text style={styles.value}>{session.promotion || '.............................'}</Text>
+            <Text style={styles.label}>Niveau</Text>
+            <Text style={styles.value}>{session.niveau || '..................................'}</Text>
+            <Text style={styles.label}>Semestre</Text>
+            <Text style={styles.value}>{session.semestre || '....................................'}</Text>
+          </View>
+          
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>durant la période :</Text>
+            <Text style={styles.value}>{session.periode || '.............................'}</Text>
+          </View>
+          
+        </View>
+
+        {/* Tableau coordinateur - CORRIGÉ */}
+        <View style={styles.section}>
+          <Text>A été effectuée par la participation a la coordination du :</Text>
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.tableCol, styles.tableCell]}>Nom et Prénom</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>N° CIN</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>RIB</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Banque</Text>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>Nom et Prénom</Text>
+              </View>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>Fonction</Text>
+              </View>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>N° CIN</Text>
+              </View>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>RIB</Text>
+              </View>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>Banque</Text>
+              </View>
             </View>
             <View style={styles.tableRow}>
-              <Text style={[styles.tableCol, styles.tableCell]}>{coordinateur?.name || 'Non renseigné'}</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{coordinateur?.cin || ''}</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{coordinateur?.rib || ''}</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{coordinateur?.banque || ''}</Text>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>{coordinateur?.name || 'Non renseigné'}</Text>
+              </View>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>{coordinateur?.fonction || 'Coordinateur'}</Text>
+              </View>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>{coordinateur?.cin || ''}</Text>
+              </View>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>{coordinateur?.rib || ''}</Text>
+              </View>
+              <View style={styles.tableColFive}>
+                <Text style={styles.tableCell}>{coordinateur?.banque || ''}</Text>
+              </View>
             </View>
           </View>
         </View>
 
+        {/* Tableau montants coordination - CORRIGÉ */}
         <View style={styles.section}>
+          <Text>Et ce selon les informations ci-dessous :</Text>
+
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.tableCol, styles.tableCell]}>Description</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Montant Brut</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Retenue</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Montant Net</Text>
+              <View style={styles.tableColThree}>
+                <Text style={styles.tableCell}>Montant Brut</Text>
+              </View>
+              <View style={styles.tableColThree}>
+                <Text style={styles.tableCell}>Retenue</Text>
+              </View>
+              <View style={styles.tableColThree}>
+                <Text style={styles.tableCell}>Montant Net</Text>
+              </View>
             </View>
             <View style={styles.tableRow}>
-              <Text style={[styles.tableCol, styles.tableCell]}>Coordination de session</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{(fiche.montantBrut ?? 0).toFixed(3)} TND</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{retenue.toFixed(3)} TND</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{(fiche.montantNet ?? 0).toFixed(3)} TND</Text>
+              <View style={styles.tableColThree}>
+                <Text style={styles.tableCell}>{(fiche.montantBrut ?? 0).toFixed(3)} TND</Text>
+              </View>
+              <View style={styles.tableColThree}>
+                <Text style={styles.tableCell}>{retenue.toFixed(3)} TND</Text>
+              </View>
+              <View style={styles.tableColThree}>
+                <Text style={styles.tableCell}>{(fiche.montantNet ?? 0).toFixed(3)} TND</Text>
+              </View>
+            </View>
+            <View style={styles.tableRow}>
+              <View style={styles.tableColThree}>
+                <Text style={[styles.tableCell, styles.tableCellBold]}>Montant en toutes lettres</Text>
+              </View>
+              <View style={styles.tableColTwoThirds}>
+                <Text style={styles.tableCell}>{amountToWords(fiche.montantBrut ?? 0)}</Text>
+              </View>
             </View>
           </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text>Montant en toutes lettres : {amountToWords(fiche.montantNet ?? 0)}</Text>
         </View>
 
         <View style={styles.signatureSection}>
-          <Text>Visa et Cachet du directeur de l'établissement : ________________________________</Text>
-          <Text>Signature du coordinateur : ________________________________</Text>
+          <View style={styles.section}><Text>Visa et Cachet du directeur de l'établissement : ................</Text></View>
+          <View style={styles.section}><Text>Signature du coordinateur : ................</Text></View>
         </View>
       </Page>
     </Document>
@@ -239,84 +554,234 @@ export async function generateCoordinationPDF(session, fiche, coordinateur) {
   return pdfStream;
 }
 
-// Fonction pour le règlement
+// Fonction pour le règlement - CORRIGÉE
 export async function generateReglementPDF(session, fiche, formateurs, coordFiche, coordinateur) {
   const totalFormateursNet = formateurs?.reduce((sum, f) => sum + (f.fiche?.montantNet || 0), 0) || 0;
+  const totalFormateursBrut = formateurs?.reduce((sum, f) => sum + (f.fiche?.montantBrut || 0), 0) || 0;
   const totalCoordinationNet = coordFiche?.montantNet || 0;
+  const totalCoordinationBrut = coordFiche?.montantBrut || 0;
   const totalGeneral = totalFormateursNet + totalCoordinationNet;
+  const totalGeneralBrut = totalFormateursBrut + totalCoordinationBrut;
   
   const MyDocument = () => (
     <Document>
-      <Page size="A4" style={styles.page}>
-        <Text style={styles.header}>MEMOIRE DE REGLEMENT</Text>
-        
-        <View style={styles.section}>
-          <Text>N° Mémoire : {fiche.numMemoire || 'NON-ATTRIBUÉ'}</Text>
-          <Text>Date Mémoire : {formatDate(fiche.updatedAt)}</Text>
+      <Page size="A4" orientation="landscape" style={styles.page}>
+        {renderDocumentHeader('MEMOIRE DE REGLEMENT')}
+
+        {/* Informations mémoire */}
+        <View style={styles.memoInfo}>
+          <Text style={styles.memoNumber}>
+            <Text style={styles.label}>N° Mémoire :</Text> {fiche.numMemoire || '...............'}
+          </Text>
+          <Text style={styles.memoDate}>
+            <Text style={styles.label}>Date Mémoire :</Text> {formatDate(fiche.updatedAt) || '...............'}
+          </Text>
         </View>
 
-        <View style={styles.section}>
-          <Text>Session : {session.titre || ''}</Text>
-          <Text>Classe : {session.classe || ''} - Spécialité : {session.specialite || ''}</Text>
-          <Text>Promotion : {session.promotion || ''} - Période : {session.periode || ''}</Text>
+        {/* Section certification */}
+        <View style={[styles.section, styles.headerSection]}>
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>Je soussigné(e) Mr (Mme)</Text>
+            <Text style={styles.value}>{fiche.nomResponsable || '.............................'}</Text>
+            <Text style={styles.label}>Fonction</Text>
+            <Text style={styles.value}>.................................</Text>
+            <Text style={styles.label}>De</Text>
+            <Text style={styles.value}>........................................</Text>
+            <Text>certifie que le règlement relatif a :</Text>
+          </View>
         </View>
 
+        {/* Informations formation */}
         <View style={styles.section}>
-          <Text>Détail des formateurs :</Text>
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>Classe</Text>
+            <Text style={styles.value}>{session.classe || '.............................'}</Text>
+            <Text style={styles.label}>Spécialité</Text>
+            <Text style={styles.value}>{session.specialite || '.............................'}</Text>
+            <Text style={styles.label}>Promotion</Text>
+            <Text style={styles.value}>{session.promotion || '.............................'}</Text>
+            <Text style={styles.label}>Niveau</Text>
+            <Text style={styles.value}>{session.niveau || '..................................'}</Text>
+            <Text style={styles.label}>Semestre</Text>
+            <Text style={styles.value}>{session.semestre || '....................................'}</Text>
+          </View>
+          
+          <View style={styles.inlineRow}>
+            <Text style={styles.label}>durant la période :</Text>
+            <Text style={styles.value}>{session.periode || '.............................'}</Text>
+          </View>
+          
+        </View>
+
+        {/* Détail des formateurs - CORRIGÉ */}
+        <View style={styles.section}>
+          <Text>Etat de rémunération des enseignants :</Text>
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.tableCol, styles.tableCell]}>Formateur</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Heures</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Montant Net</Text>
-            </View>
-            {formateurs?.map((formateur, index) => (
-              <View style={styles.tableRow} key={index}>
-                <Text style={[styles.tableCol, styles.tableCell]}>{formateur.name}</Text>
-                <Text style={[styles.tableCol, styles.tableCell]}>{formateur.fiche?.totalHeures || 0}</Text>
-                <Text style={[styles.tableCol, styles.tableCell]}>{(formateur.fiche?.montantNet || 0).toFixed(3)} TND</Text>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>Nom et Prénom</Text>
               </View>
-            ))}
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>N° CIN</Text>
+              </View>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>Total regr</Text>
+              </View>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>Total tutorat</Text>
+              </View>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>Total heures</Text>
+              </View>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>Montant brut</Text>
+              </View>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>Retenues</Text>
+              </View>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>Montant net</Text>
+              </View>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>RIB</Text>
+              </View>
+              <View style={styles.tableColTen}>
+                <Text style={styles.tableCell}>Banque</Text>
+              </View>
+            </View>
+            {formateurs?.map((formateur, index) => {
+              const brut = formateur.fiche?.montantBrut ?? 0;
+              const net = formateur.fiche?.montantNet ?? 0;
+              const retenue = brut - net;
+              return (
+                <View style={styles.tableRow} key={index}>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{formateur.name || 'Non renseigné'}</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{formateur.cin || ''}</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{formateur.fiche?.totalRegroupement || 0}</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{formateur.fiche?.totalTutorat || 0}</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{formateur.fiche?.totalHeures || 0}</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{brut.toFixed(3)} TND</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{retenue.toFixed(3)} TND</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{net.toFixed(3)} TND</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{formatRib(formateur.rib)}</Text>
+                  </View>
+                  <View style={styles.tableColTen}>
+                    <Text style={styles.tableCell}>{formateur.banque || ''}</Text>
+                  </View>
+                </View>
+              );
+            })}
+            <View style={styles.tableRow}>
+              <View style={styles.tableColThree}>
+                <Text style={[styles.tableCell, styles.tableCellBold]}>TOTAL (brut)</Text>
+              </View>
+              <View style={styles.tableColTwoThirds}>
+                <Text style={styles.tableCell}>{totalFormateursBrut.toFixed(3)} TND</Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text>Détail de la coordination :</Text>
+        {/* Détail de la coordination - CORRIGÉ */}
+        <View style={styles.section} wrap={false}>
+          <Text>Frais de coordination :</Text>
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.tableCol, styles.tableCell]}>Coordinateur</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Description</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Montant Net</Text>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>Nom et prénom</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>N° CIN</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>Montant brut</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>Retenues</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>Montant net</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>Total brut</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>RIB</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>Banque</Text>
+              </View>
             </View>
             <View style={styles.tableRow}>
-              <Text style={[styles.tableCol, styles.tableCell]}>{coordinateur?.name || 'Non renseigné'}</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Coordination</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{totalCoordinationNet.toFixed(3)} TND</Text>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>{coordinateur?.name || 'Non renseigné'}</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>{coordinateur?.cin || ''}</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>{(coordFiche?.montantBrut ?? 0).toFixed(3)} TND</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>{((coordFiche?.montantBrut ?? 0) - (coordFiche?.montantNet ?? 0)).toFixed(3)} TND</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>{(coordFiche?.montantNet ?? 0).toFixed(3)} TND</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>{(coordFiche?.montantBrut ?? 0).toFixed(3)} TND</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>{formatRib(coordinateur?.rib)}</Text>
+              </View>
+              <View style={styles.tableColEight}>
+                <Text style={styles.tableCell}>{coordinateur?.banque || ''}</Text>
+              </View>
             </View>
           </View>
         </View>
 
-        <View style={styles.section}>
+        {/* Total général - CORRIGÉ */}
+        <View style={styles.section} wrap={false}>
           <View style={styles.table}>
-            <View style={[styles.tableRow, styles.tableHeader]}>
-              <Text style={[styles.tableCol, styles.tableCell]}>Total Formateurs</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Total Coordination</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>Total Général</Text>
+            <View style={styles.tableRow}>
+              <View style={styles.tableColThree}>
+                <Text style={[styles.tableCell, styles.tableCellBold]}>Total général brut</Text>
+              </View>
+              <View style={styles.tableColTwoThirds}>
+                <Text style={styles.tableCell}>{totalGeneralBrut.toFixed(3)} TND</Text>
+              </View>
             </View>
             <View style={styles.tableRow}>
-              <Text style={[styles.tableCol, styles.tableCell]}>{totalFormateursNet.toFixed(3)} TND</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{totalCoordinationNet.toFixed(3)} TND</Text>
-              <Text style={[styles.tableCol, styles.tableCell]}>{totalGeneral.toFixed(3)} TND</Text>
+              <View style={styles.tableColThree}>
+                <Text style={[styles.tableCell, styles.tableCellBold]}>Montant total en toutes lettres</Text>
+              </View>
+              <View style={styles.tableColTwoThirds}>
+                <Text style={styles.tableCell}>{amountToWords(totalGeneralBrut)}</Text>
+              </View>
             </View>
           </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text>Montant total en toutes lettres : {amountToWords(totalGeneral)}</Text>
         </View>
 
         <View style={styles.signatureSection}>
-          <Text>Visa et Cachet du directeur de l'établissement : ________________________________</Text>
-          <Text>Signature du responsable : ________________________________</Text>
+          <View style={styles.section}><Text>Visa et Cachet du directeur de l'établissement : ..............................</Text></View>
         </View>
       </Page>
     </Document>
