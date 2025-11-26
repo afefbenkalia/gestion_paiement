@@ -240,7 +240,6 @@ export default function SessionDetailPage({ params }) {
       }
     } catch (err) {
       console.error('Erreur:', err);
-      alert('Erreur lors de l\'assignation du coordinateur');
     }
   };
 
@@ -285,7 +284,6 @@ export default function SessionDetailPage({ params }) {
       }
     } catch (err) {
       console.error('Erreur:', err);
-      alert('Erreur lors de la suppression du coordinateur');
     }
   };
 
@@ -322,14 +320,12 @@ export default function SessionDetailPage({ params }) {
     if (selectedFormateurs.includes(formateurId)) return;
     const newAssigned = [...selectedFormateurs, formateurId];
     await updateAssignedFormateurs(newAssigned);
-    alert('Formateur accepté et assigné à la session');
   };
 
   const handleRemoveFormateur = async (formateurId) => {
     if (!selectedFormateurs.includes(formateurId)) return;
     const newAssigned = selectedFormateurs.filter((fid) => fid !== formateurId);
     await updateAssignedFormateurs(newAssigned);
-    alert('Formateur retiré de la session');
   };
 
   const handleDownloadCV = (formateurId) => {
@@ -355,7 +351,7 @@ export default function SessionDetailPage({ params }) {
     );
 
   return (
-    <div className="w-full px-4 py-6">
+    <div className="w-11/12 mx-6 px-4 py-6 mb-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Détails de la Session</h1>
@@ -528,7 +524,7 @@ export default function SessionDetailPage({ params }) {
       </div>
 
       {/* Liste coordinateurs disponibles - pleine largeur */}
-      <Card className="w-full mt-6">
+      <Card className="w-full mt-6 mb-8">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />

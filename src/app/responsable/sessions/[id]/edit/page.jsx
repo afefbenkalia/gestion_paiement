@@ -209,7 +209,7 @@ export default function EditSessionPage() {
   }
 
   return (
-    <div className="w-full px-4 py-6 space-y-6">
+    <div className="w-11/12 mx-6 px-4 py-6 space-y-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Modifier la session</h1>

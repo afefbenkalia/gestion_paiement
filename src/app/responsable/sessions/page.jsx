@@ -148,8 +148,8 @@ export default function SessionsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-blue-50/30 py-8">
+      <div className="w-11/12 mx-auto px-4">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -162,7 +162,7 @@ export default function SessionsPage() {
           </div>
           <Link
             href="/responsable/sessions/create"
-            className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-3.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 flex items-center gap-2"
+            className="bg-linear-to-r from-blue-600 to-indigo-700 text-white px-6 py-3.5 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 flex items-center gap-2"
           >
             <span className="text-lg">+</span>
             Nouvelle Session
@@ -254,7 +254,7 @@ export default function SessionsPage() {
                   {/* Fixed Speciality Badge */}
                   {session.specialite && (
                     <div className="absolute top-4 right-4">
-                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm">
+                      <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-linear-to-r from-blue-500 to-blue-600 text-white shadow-sm">
                         {session.specialite}
                       </span>
                     </div>
@@ -269,7 +269,7 @@ export default function SessionsPage() {
                 <div className="p-6">
                   {/* Date Info */}
                   <div className="flex items-center gap-2 text-sm text-gray-600 mb-4 p-3 bg-gray-50 rounded-lg">
-                    <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
                     <div className="flex flex-wrap items-center gap-1">
                       <span className="font-medium">Du</span>
                       <strong className="text-gray-900">
@@ -318,7 +318,7 @@ export default function SessionsPage() {
                   <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-gray-100">
                     <Link
                       href={`/responsable/sessions/${session.id}`}
-                      className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-center flex items-center justify-center gap-2 group/btn"
+                      className="flex-1 bg-linear-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg font-medium hover:from-blue-700 hover:to-blue-800 transition-all duration-200 text-center flex items-center justify-center gap-2 group/btn"
                     >
                       <span>Voir détails</span>
                       <span className="group-hover/btn:translate-x-0.5 transition-transform">→</span>

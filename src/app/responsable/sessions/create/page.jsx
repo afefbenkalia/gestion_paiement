@@ -112,7 +112,7 @@ export default function CreateSessionPage() {
   };
 
   return (
-    <div className="w-full px-4 py-6 space-y-6">
+    <div className="w-11/12 mx-6 px-4 py-6 space-y-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Création de Session</h1>
