@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, BookOpen, User, Mail, Phone } from 'lucide-react';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import { CoordinateurSwipe, FormateursSwipe } from '@/components/session-assignment-swipe';
 
 const formatDateInput = (value) => {
@@ -138,6 +140,7 @@ export default function EditSessionPage() {
       
       // Start date must be >= today's date
       if (!startDate || startDate < todayStart) {
+        toast.error('La date de début doit être ≥ à la date du système');
         setDateDebut('');
         setSaving(false);
         return;
@@ -145,6 +148,7 @@ export default function EditSessionPage() {
 
       // End date must be >= start date
       if (endDate && endDate < startDate) {
+        toast.error('La date de fin doit être ≥ à la date de début');
         setDateFin('');
         setSaving(false);
         return;
@@ -201,12 +205,15 @@ export default function EditSessionPage() {
       });
 
       if (res.ok) {
-        router.push(`/responsable/sessions/${sessionId}`);
+        toast.success('Session mise à jour avec succès');
+        setTimeout(() => router.push(`/responsable/sessions/${sessionId}`), 1200);
       } else {
         const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Erreur lors de la mise à jour de la session');
       }
     } catch (error) {
       console.error('Erreur mise à jour session:', error);
+      toast.error('Erreur de connexion au serveur');
     } finally {
       setSaving(false);
     }
@@ -225,6 +232,7 @@ export default function EditSessionPage() {
 
   return (
     <div className="w-11/12 mx-6 px-4 py-6 space-y-6">
+      <Toaster richColors position="top-right" />
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Modifier la session</h1>

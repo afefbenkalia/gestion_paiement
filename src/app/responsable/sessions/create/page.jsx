@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, BookOpen, User, Mail, Phone } from 'lucide-react';
+import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import { CoordinateurSwipe, FormateursSwipe } from '@/components/session-assignment-swipe';
 
 export default function CreateSessionPage() {
@@ -93,6 +95,7 @@ export default function CreateSessionPage() {
 
       // Validation: start date must be >= system date
       if (!startDate || startDate < todayStart) {
+        toast.error('La date de début doit être ≥ à la date du système');
         setDateDebut('');
         setLoading(false);
         return;
@@ -100,6 +103,7 @@ export default function CreateSessionPage() {
 
       // Validation: end date must be >= start date (if provided)
       if (endDate && endDate < startDate) {
+        toast.error('La date de fin doit être ≥ à la date de début');
         setDateFin('');
         setLoading(false);
         return;
@@ -125,12 +129,15 @@ export default function CreateSessionPage() {
       });
 
       if (res.ok) {
-        router.push('/responsable/sessions');
+        toast.success('Session créée avec succès');
+        setTimeout(() => router.push('/responsable/sessions'), 1200);
       } else {
         const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'Erreur lors de la création de la session');
       }
     } catch (error) {
       console.error('Erreur création session:', error);
+      toast.error('Erreur de connexion au serveur');
     } finally {
       setLoading(false);
     }
@@ -138,6 +145,7 @@ export default function CreateSessionPage() {
 
   return (
     <div className="w-11/12 mx-6 px-4 py-6 space-y-6">
+      <Toaster richColors position="top-right" />
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Création de Session</h1>
