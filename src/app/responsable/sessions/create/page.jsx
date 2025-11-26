@@ -80,6 +80,31 @@ export default function CreateSessionPage() {
         return;
       }
 
+      // Helpers for local date-only comparison
+      const toLocalDate = (s) => {
+        if (!s) return null;
+        const [yy, mm, dd] = s.split('-').map(Number);
+        return new Date(yy, (mm || 1) - 1, dd || 1);
+      };
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startDate = toLocalDate(dateDebut);
+      const endDate = toLocalDate(dateFin);
+
+      // Validation: start date must be >= system date
+      if (!startDate || startDate < todayStart) {
+        setDateDebut('');
+        setLoading(false);
+        return;
+      }
+
+      // Validation: end date must be >= start date (if provided)
+      if (endDate && endDate < startDate) {
+        setDateFin('');
+        setLoading(false);
+        return;
+      }
+
       const payload = {
         titre: titre.trim(),
         dateDebut,

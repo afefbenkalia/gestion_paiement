@@ -126,10 +126,26 @@ export default function EditSessionPage() {
       }
 
       // Validation des dates
-      const startDate = new Date(dateDebut);
-      const endDate = new Date(dateFin);
+      const toLocalDate = (s) => {
+        if (!s) return null;
+        const [yy, mm, dd] = s.split('-').map(Number);
+        return new Date(yy, (mm || 1) - 1, dd || 1);
+      };
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startDate = toLocalDate(dateDebut);
+      const endDate = toLocalDate(dateFin);
       
-      if (endDate < startDate) {
+      // Start date must be >= today's date
+      if (!startDate || startDate < todayStart) {
+        setDateDebut('');
+        setSaving(false);
+        return;
+      }
+
+      // End date must be >= start date
+      if (endDate && endDate < startDate) {
+        setDateFin('');
         setSaving(false);
         return;
       }
@@ -188,7 +204,6 @@ export default function EditSessionPage() {
         router.push(`/responsable/sessions/${sessionId}`);
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || 'Erreur lors de la mise à jour de la session ❌');
       }
     } catch (error) {
       console.error('Erreur mise à jour session:', error);
