@@ -33,7 +33,7 @@ export default function LoginPage() {
       } else if (session?.user?.status === 'ACTIVE') {
         // Si FORMATEUR ou COORDINATEUR avec status ACTIVE → dashboard du rôle
         if (session?.user?.role === 'FORMATEUR') {
-          router.push('/formateur')
+          router.push('/formateur/sessions')
         } else if (session?.user?.role === 'COORDINATEUR') {
           router.push('/coordinateur')
         }
