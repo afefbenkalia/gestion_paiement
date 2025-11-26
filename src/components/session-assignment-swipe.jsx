@@ -1,5 +1,5 @@
 'use client';
-
+//src/components/session-assignment-swipe.jsx
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,38 +47,56 @@ function Carousel({ items = [], renderItem, maxVisible = 3, perPage }) {
     <div>
       <div className="relative">
         <div className="overflow-hidden" ref={containerRef}>
+          {/**
+           * Ensure full-width usage even when items < visible.
+           * If fewer items than the configured visible count, stretch them across 100%.
+           */}
           <div
             className="flex transition-transform duration-300 ease-in-out"
-            style={{ width: `${(items.length / visible) * 100}%`, transform: `translateX(-${page * 100}%)` }}
+            style={{
+              width: `${items.length === 0 ? 100 : (items.length < visible ? 100 : (items.length / visible) * 100)}%`,
+              transform: `translateX(-${page * 100}%)`
+            }}
           >
-            {items.map((it, idx) => (
-              <div key={it.id ?? idx} style={{ flex: `0 0 ${100 / visible}%` }} className="px-2">
-                {renderItem(it, idx)}
-              </div>
-            ))}
+            {items.map((it, idx) => {
+              const basis = items.length < visible ? 100 / items.length : 100 / visible;
+              return (
+                <div key={it.id ?? idx} style={{ flex: `0 0 ${basis}%` }} className="px-2">
+                  {renderItem(it, idx)}
+                </div>
+              );
+            })}
           </div>
         </div>
 
-        {pages > 1 && (
-          <>
-            <button type="button" onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg text-2xl font-bold text-gray-700 hover:text-gray-900 transition-all hidden md:block">
-              ‹
-            </button>
-            <button type="button" onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg text-2xl font-bold text-gray-700 hover:text-gray-900 transition-all hidden md:block">
-              ›
-            </button>
-          </>
-        )}
+            {pages > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={prev}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-4 shadow-lg text-3xl font-bold text-gray-700 hover:text-gray-900 transition-all hidden md:block"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={next}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-4 shadow-lg text-3xl font-bold text-gray-700 hover:text-gray-900 transition-all hidden md:block"
+                >
+                  ›
+                </button>
+              </>
+            )}
       </div>
 
       {pages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-3">
+        <div className="flex items-center justify-center gap-3 mt-4">
           {Array.from({ length: pages }).map((_, i) => (
             <button
               type="button"
               key={i}
               onClick={() => setPage(i)}
-              className={`w-2 h-2 rounded-full ${i === page ? 'bg-gray-800' : 'bg-gray-300'}`}
+              className={`w-3 h-3 rounded-full ${i === page ? 'bg-gray-800' : 'bg-gray-300'}`}
               aria-label={`Page ${i + 1}`}
             />
           ))}
@@ -96,7 +114,7 @@ export function CoordinateurSwipe({ coordinateurs, selectedId, onSelect }) {
   const availableCoordinateurs = coordinateurs.filter(c => String(c.id) !== String(selectedId));
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <User className="h-5 w-5" />
@@ -110,24 +128,23 @@ export function CoordinateurSwipe({ coordinateurs, selectedId, onSelect }) {
                 maxVisible={4}
                 perPage={4}
                 renderItem={(c) => (
-                  <div className="bg-white border rounded-lg p-4">
-                    <div className="flex flex-col items-center text-center space-y-2">
-                      <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-lg font-bold">
+                  <div className="bg-white border rounded-lg p-6">
+                    <div className="flex flex-col items-center text-center space-y-3">
+                      <div className="flex items-center justify-center w-20 h-20 bg-linear-to-br from-blue-400 to-purple-500 text-white rounded-full text-2xl font-bold">
                         {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                       </div>
-                      <h3 className="font-semibold text-sm">{c.name}</h3>
-                      <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                      <h3 className="font-semibold text-base">{c.name}</h3>
+                      <p className="text-sm text-blue-600 flex items-center justify-center gap-1">
                         <Mail className="h-3 w-3" />{c.email}
                       </p>
                       {c.tel && (
-                        <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                        <p className="text-sm text-blue-600 flex items-center justify-center gap-1">
                           <Phone className="h-3 w-3" />{c.tel}
                         </p>
                       )}
-                      <Button 
+                      <Button
                         type="button"
-                        size="sm" 
-                        className="bg-blue-600 hover:bg-blue-700 w-full text-white py-1"
+                        className="bg-blue-600 hover:bg-blue-700 w-full text-white py-2 text-base"
                         onClick={() => onSelect(String(c.id))}
                       >
                         Assigner
@@ -163,7 +180,7 @@ export function FormateursSwipe({ formateurs, selectedIds, onToggle }) {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
@@ -179,15 +196,15 @@ export function FormateursSwipe({ formateurs, selectedIds, onToggle }) {
             renderItem={(f) => {
               const isAssigned = selectedIds.includes(String(f.id));
               return (
-                <div className="bg-white border rounded-lg p-4">
-                  <div className="flex flex-col items-center text-center space-y-2">
+                <div className="bg-white border rounded-lg p-6">
+                  <div className="flex flex-col items-center text-center space-y-3">
                     <Badge variant="secondary" className={isAssigned ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
                       {isAssigned ? 'Assigné' : 'Disponible'}
                     </Badge>
-                    <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full text-lg font-bold">
+                    <div className="flex items-center justify-center w-20 h-20 bg-linear-to-br from-orange-400 to-orange-600 text-white rounded-full text-2xl font-bold">
                       {f.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
-                    <h3 className="font-semibold text-sm">{f.name}</h3>
+                    <h3 className="font-semibold text-base">{f.name}</h3>
                     <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
                       <Mail className="h-3 w-3" />{f.email}
                     </p>
@@ -196,29 +213,26 @@ export function FormateursSwipe({ formateurs, selectedIds, onToggle }) {
                         <Phone className="h-3 w-3" />{f.tel}
                       </p>
                     )}
-                    <Button 
+                    <Button
                       type="button"
-                      size="sm" 
-                      className="bg-orange-500 hover:bg-orange-600 w-full text-white py-1" 
+                      className="bg-orange-500 hover:bg-orange-600 w-full text-white py-2 text-base"
                       onClick={() => handleDownloadCV(f.id)}
                     >
                       <Download className="h-3 w-3 mr-1" /> CV
                     </Button>
                     {isAssigned ? (
-                      <Button 
+                      <Button
                         type="button"
-                        size="sm" 
-                        variant="destructive" 
-                        className="w-full py-1" 
+                        variant="destructive"
+                        className="w-full py-2 text-base"
                         onClick={() => onToggle(String(f.id))}
                       >
                         Retirer
                       </Button>
                     ) : (
-                      <Button 
+                      <Button
                         type="button"
-                        size="sm" 
-                        className="bg-green-500 hover:bg-green-600 w-full text-white py-1" 
+                        className="bg-green-500 hover:bg-green-600 w-full text-white py-2 text-base"
                         onClick={() => onToggle(String(f.id))}
                       >
                         <Check className="h-3 w-3 mr-1" /> Assigner

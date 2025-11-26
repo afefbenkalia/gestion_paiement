@@ -63,10 +63,18 @@ function Carousel({ items = [], renderItem, maxVisible = 3, perPage }) {
 
         {pages > 1 && (
           <>
-            <button onClick={prev} className="absolute left-1 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hidden md:block">
+            <button
+              type="button"
+              onClick={prev}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-4 shadow-lg text-3xl font-bold text-gray-700 hover:text-gray-900 transition-all hidden md:block"
+            >
               ‹
             </button>
-            <button onClick={next} className="absolute right-1 top-1/2 -translate-y-1/2 bg-white/80 rounded-full p-1 shadow hidden md:block">
+            <button
+              type="button"
+              onClick={next}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-4 shadow-lg text-3xl font-bold text-gray-700 hover:text-gray-900 transition-all hidden md:block"
+            >
               ›
             </button>
           </>
@@ -74,12 +82,13 @@ function Carousel({ items = [], renderItem, maxVisible = 3, perPage }) {
       </div>
 
       {pages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-3">
+        <div className="flex items-center justify-center gap-3 mt-4">
           {Array.from({ length: pages }).map((_, i) => (
             <button
+              type="button"
               key={i}
               onClick={() => setPage(i)}
-              className={`w-2 h-2 rounded-full ${i === page ? 'bg-gray-800' : 'bg-gray-300'}`}
+              className={`w-3 h-3 rounded-full ${i === page ? 'bg-gray-800' : 'bg-gray-300'}`}
               aria-label={`Page ${i + 1}`}
             />
           ))}
@@ -346,7 +355,7 @@ export default function SessionDetailPage({ params }) {
     );
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="w-full px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Détails de la Session</h1>
@@ -467,128 +476,6 @@ export default function SessionDetailPage({ params }) {
               </div>
             </CardContent>
           </Card>
-
-          {/* Liste coordinateurs disponibles */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Coordinateurs Disponibles
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {coordinateurs?.length > 0 ? (
-                <Carousel
-                  items={coordinateurs}
-                  maxVisible={3}
-                  perPage={3}
-                  renderItem={(c) => (
-                    <div className="bg-white border rounded-lg p-4">
-                      <div className="flex flex-col items-center text-center space-y-2">
-                        <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-lg font-bold">
-                          {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                        </div>
-                        <h3 className="font-semibold text-sm">{c.name}</h3>
-                        <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
-                          <Mail className="h-3 w-3" />{c.email}
-                        </p>
-                        {c.tel && (
-                          <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
-                            <Phone className="h-3 w-3" />{c.tel}
-                          </p>
-                        )}
-                        <Button 
-                          size="sm" 
-                          className="bg-blue-600 hover:bg-blue-700 w-full text-white py-1"
-                          onClick={() => handleAssignCoordinateur(c.id)}
-                        >
-                          Assigner
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                />
-              ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
-                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">Aucun coordinateur disponible</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Liste formateurs */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5" />
-                Formateurs Disponibles
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {formateurs?.length > 0 ? (
-                <Carousel
-                  items={orderedFormateurs}
-                  maxVisible={4}
-                  perPage={4}
-                  renderItem={(f) => {
-                    const isAssigned = selectedFormateurs.includes(f.id);
-                    return (
-                      <div className="bg-white border rounded-lg p-4">
-                        <div className="flex flex-col items-center text-center space-y-2">
-                          <Badge variant="secondary" className={isAssigned ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
-                            {isAssigned ? 'Assigné' : 'Disponible'}
-                          </Badge>
-                          <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full text-lg font-bold">
-                            {f.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                          </div>
-                          <h3 className="font-semibold text-sm">{f.name}</h3>
-                          <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
-                            <Mail className="h-3 w-3" />{f.email}
-                          </p>
-                          {f.tel && (
-                            <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
-                              <Phone className="h-3 w-3" />{f.tel}
-                            </p>
-                          )}
-                          <Button 
-                            size="sm" 
-                            className="bg-orange-500 hover:bg-orange-600 w-full text-white py-1" 
-                            onClick={() => handleDownloadCV(f.id)}
-                          >
-                            <Download className="h-3 w-3 mr-1" /> CV
-                          </Button>
-                          {isAssigned ? (
-                            <Button 
-                              size="sm" 
-                              variant="destructive" 
-                              className="w-full py-1" 
-                              onClick={() => handleRemoveFormateur(f.id)}
-                            >
-                              Retirer
-                            </Button>
-                          ) : (
-                            <Button 
-                              size="sm" 
-                              className="bg-green-500 hover:bg-green-600 w-full text-white py-1" 
-                              onClick={() => handleAcceptFormateur(f.id)}
-                            >
-                              <Check className="h-3 w-3 mr-1" /> Assigner
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-              ) : (
-                <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
-                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">Aucun formateur disponible</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Coordinateur actuel */}
@@ -603,7 +490,7 @@ export default function SessionDetailPage({ params }) {
             <CardContent>
               {session.coordinateur ? (
                 <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-2xl font-bold">
+                  <div className="flex items-center justify-center w-24 h-24 bg-linear-to-br from-blue-400 to-purple-500 text-white rounded-full text-2xl font-bold">
                     {session.coordinateur.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                   </div>
                   <h3 className="text-xl font-bold">{session.coordinateur.name}</h3>
@@ -639,6 +526,128 @@ export default function SessionDetailPage({ params }) {
           </Card>
         </div>
       </div>
+
+      {/* Liste coordinateurs disponibles - pleine largeur */}
+      <Card className="w-full mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Coordinateurs Disponibles
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {coordinateurs?.length > 0 ? (
+            <Carousel
+              items={coordinateurs}
+              maxVisible={4}
+              perPage={4}
+              renderItem={(c) => (
+                <div className="bg-white border rounded-lg p-4">
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-blue-400 to-purple-500 text-white rounded-full text-lg font-bold">
+                      {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                    <h3 className="font-semibold text-sm">{c.name}</h3>
+                    <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                      <Mail className="h-3 w-3" />{c.email}
+                    </p>
+                    {c.tel && (
+                      <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                        <Phone className="h-3 w-3" />{c.tel}
+                      </p>
+                    )}
+                    <Button 
+                      size="sm" 
+                      className="bg-blue-600 hover:bg-blue-700 w-full text-white py-1"
+                      onClick={() => handleAssignCoordinateur(c.id)}
+                    >
+                      Assigner
+                    </Button>
+                  </div>
+                </div>
+              )}
+            />
+          ) : (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">Aucun coordinateur disponible</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Liste formateurs - pleine largeur */}
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5" />
+            Formateurs Disponibles
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {formateurs?.length > 0 ? (
+            <Carousel
+              items={orderedFormateurs}
+              maxVisible={5}
+              perPage={5}
+              renderItem={(f) => {
+                const isAssigned = selectedFormateurs.includes(f.id);
+                return (
+                  <div className="bg-white border rounded-lg p-4">
+                    <div className="flex flex-col items-center text-center space-y-2">
+                      <Badge variant="secondary" className={isAssigned ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                        {isAssigned ? 'Assigné' : 'Disponible'}
+                      </Badge>
+                      <div className="flex items-center justify-center w-14 h-14 bg-linear-to-br from-orange-400 to-orange-600 text-white rounded-full text-lg font-bold">
+                        {f.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                      </div>
+                      <h3 className="font-semibold text-sm">{f.name}</h3>
+                      <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                        <Mail className="h-3 w-3" />{f.email}
+                      </p>
+                      {f.tel && (
+                        <p className="text-xs text-blue-600 flex items-center justify-center gap-1">
+                          <Phone className="h-3 w-3" />{f.tel}
+                        </p>
+                      )}
+                      <Button 
+                        size="sm" 
+                        className="bg-orange-500 hover:bg-orange-600 w-full text-white py-1" 
+                        onClick={() => handleDownloadCV(f.id)}
+                      >
+                        <Download className="h-3 w-3 mr-1" /> CV
+                      </Button>
+                      {isAssigned ? (
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          className="w-full py-1" 
+                          onClick={() => handleRemoveFormateur(f.id)}
+                        >
+                          Retirer
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          className="bg-green-500 hover:bg-green-600 w-full text-white py-1" 
+                          onClick={() => handleAcceptFormateur(f.id)}
+                        >
+                          <Check className="h-3 w-3 mr-1" /> Assigner
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              }}
+            />
+          ) : (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+              <p className="text-muted-foreground">Aucun formateur disponible</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

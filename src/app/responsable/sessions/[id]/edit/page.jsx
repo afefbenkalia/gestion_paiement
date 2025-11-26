@@ -209,7 +209,7 @@ export default function EditSessionPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
+    <div className="w-full px-4 py-6 space-y-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Modifier la session</h1>
@@ -366,7 +366,7 @@ export default function EditSessionPage() {
               <CardContent>
                 {currentCoordinateur ? (
                   <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-xl font-bold">
+                    <div className="flex items-center justify-center w-20 h-20 bg-linear-to-br from-blue-400 to-purple-500 text-white rounded-full text-xl font-bold">
                       {currentCoordinateur.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                     </div>
                     <h3 className="text-lg font-bold">{currentCoordinateur.name}</h3>
