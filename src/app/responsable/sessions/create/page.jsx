@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { X, Calendar, Clock, Users, User, Mail, Phone, BookOpen } from 'lucide-react';
+import { Calendar, BookOpen, User, Mail, Phone } from 'lucide-react';
+import { CoordinateurSwipe, FormateursSwipe } from '@/components/session-assignment-swipe';
 
 export default function CreateSessionPage() {
   const router = useRouter();
@@ -25,6 +24,7 @@ export default function CreateSessionPage() {
 
   const [formateurs, setFormateurs] = useState([]);
   const [coordinateurs, setCoordinateurs] = useState([]);
+  const [currentCoordinateur, setCurrentCoordinateur] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -48,14 +48,26 @@ export default function CreateSessionPage() {
     fetchUsers();
   }, []);
 
-  const handleFormateurSelect = (formateurId) => {
-    if (!formateurIds.includes(formateurId)) {
+  const handleFormateurToggle = (formateurId) => {
+    if (formateurIds.includes(formateurId)) {
+      setFormateurIds(formateurIds.filter(id => id !== formateurId));
+    } else {
       setFormateurIds([...formateurIds, formateurId]);
     }
   };
 
-  const removeFormateur = (formateurId) => {
-    setFormateurIds(formateurIds.filter(id => id !== formateurId));
+  const handleCoordinateurSelect = (coordId) => {
+    setCoordinateurId(coordId);
+    // Mettre à jour le coordinateur actuel si disponible
+    const selectedCoord = coordinateurs.find(coord => String(coord.id) === coordId);
+    if (selectedCoord) {
+      setCurrentCoordinateur(selectedCoord);
+    }
+  };
+
+  const handleRemoveCoordinateur = () => {
+    setCoordinateurId('');
+    setCurrentCoordinateur(null);
   };
 
   const handleSubmit = async (e) => {
@@ -64,7 +76,6 @@ export default function CreateSessionPage() {
 
     try {
       if (!titre.trim()) {
-        alert('Veuillez renseigner un titre valide.');
         setLoading(false);
         return;
       }
@@ -89,25 +100,19 @@ export default function CreateSessionPage() {
       });
 
       if (res.ok) {
-        alert('Session créée avec succès ✅');
         router.push('/responsable/sessions');
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || 'Erreur lors de la création de la session ❌');
       }
     } catch (error) {
       console.error('Erreur création session:', error);
-      alert('Erreur interne du serveur.');
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedCoordinateur = coordinateurs.find(c => c.id === coordinateurId);
-  const selectedFormateurs = formateurs.filter(f => formateurIds.includes(f.id));
-
   return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
+    <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight">Création de Session</h1>
@@ -117,16 +122,21 @@ export default function CreateSessionPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Détails de la Formation */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Informations de la Session
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Détails de la Formation */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Informations de la Session
+                </CardTitle>
+                <CardDescription>
+                  Tous les champs marqués d'un * sont obligatoires
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="titre" className="text-muted-foreground">Titre de la session *</Label>
                 <Input
@@ -232,181 +242,72 @@ export default function CreateSessionPage() {
             </div>
           </CardContent>
         </Card>
+          </div>
 
-        {/* Coordinateur */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Coordinateur</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedCoordinateur ? (
-              <div className="bg-white border rounded-lg p-6">
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-2xl font-bold">
-                    {selectedCoordinateur.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">{selectedCoordinateur.name}</h3>
+          {/* Coordinateur Actuel */}
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Coordinateur Actuel
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {currentCoordinateur ? (
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-xl font-bold">
+                      {currentCoordinateur.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </div>
+                    <h3 className="text-lg font-bold">{currentCoordinateur.name}</h3>
                     <p className="text-sm text-muted-foreground">Coordinateur Formation</p>
-                  </div>
-                  <div className="space-y-2 w-full">
-                    <p className="text-sm flex items-center justify-center gap-2 text-blue-600">
+                    <p className="text-sm text-blue-600 flex items-center gap-2">
                       <Mail className="h-4 w-4" />
-                      {selectedCoordinateur.email}
+                      {currentCoordinateur.email}
                     </p>
-                    {selectedCoordinateur.telephone && (
-                      <p className="text-sm flex items-center justify-center gap-2 text-blue-600">
+                    {currentCoordinateur.tel && (
+                      <p className="text-sm text-blue-600 flex items-center gap-2">
                         <Phone className="h-4 w-4" />
-                        {selectedCoordinateur.telephone}
+                        {currentCoordinateur.tel}
                       </p>
                     )}
+                    <Button 
+                      type="button"
+                      variant="destructive" 
+                      size="sm"
+                      className="w-full" 
+                      onClick={handleRemoveCoordinateur}
+                    >
+                      Retirer le coordinateur
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setCoordinateurId('')}
-                    className="w-full max-w-xs"
-                  >
-                    Retirer
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
-                <div className="max-w-xs mx-auto">
-                  <Label className="text-left block mb-2">Coordinateur assignés</Label>
-                  <Select value={coordinateurId} onValueChange={setCoordinateurId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un coordinateur" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {coordinateurs.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center justify-center w-6 h-6 bg-gradient-to-br from-blue-400 to-purple-500 text-white rounded-full text-xs font-bold">
-                              {c.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                            </div>
-                            <div className="flex flex-col">
-                              <span>{c.name}</span>
-                              <span className="text-xs text-muted-foreground">{c.email}</span>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
+                    <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-4">Aucun coordinateur assigné</p>
+                    <p className="text-sm text-muted-foreground">
+                      Sélectionnez un coordinateur dans la section ci-dessous
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Coordinateur Disponible */}
+        <CoordinateurSwipe
+          coordinateurs={coordinateurs}
+          selectedId={coordinateurId}
+          onSelect={handleCoordinateurSelect}
+        />
 
         {/* Formateurs */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Formateurs assignés</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedFormateurs.length > 0 ? (
-              <div className="space-y-6">
-                {/* Grille des formateurs sélectionnés */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {selectedFormateurs.map((formateur, index) => (
-                    <div key={formateur.id} className="bg-white border rounded-lg p-6 relative">
-                      {/* Bouton retirer en haut à droite */}
-                      <button
-                        type="button"
-                        onClick={() => removeFormateur(formateur.id)}
-                        className="absolute top-2 right-2 p-1 hover:bg-gray-100 rounded-full"
-                      >
-                        <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                      </button>
-
-                      <div className="flex flex-col items-center text-center space-y-3">
-                        {/* Badge de statut */}
-                        <div className="w-full flex justify-center mb-2">
-                          <Badge 
-                            variant="secondary" 
-                            className="bg-blue-100 text-blue-700"
-                          >
-                            Formateur
-                          </Badge>
-                        </div>
-                        
-                        {/* Avatar */}
-                        <div className="flex items-center justify-center w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full text-2xl font-bold">
-                          {formateur.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                        </div>
-                        
-                        {/* Nom */}
-                        <h3 className="font-semibold text-lg">{formateur.name}</h3>
-                        
-                        {/* Contact */}
-                        <div className="space-y-1 w-full text-sm">
-                          <p className="flex items-center justify-center gap-2 text-blue-600">
-                            <Mail className="h-3 w-3" />
-                            {formateur.email}
-                          </p>
-                          {formateur.telephone && (
-                            <p className="flex items-center justify-center gap-2 text-blue-600">
-                              <Phone className="h-3 w-3" />
-                              {formateur.telephone}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Bouton ajouter formateur */}
-                  <div className="bg-gray-50 border-2 border-dashed rounded-lg p-6 flex items-center justify-center">
-                    <Select onValueChange={handleFormateurSelect}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="+ Ajouter un formateur" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {formateurs.filter(f => !formateurIds.includes(f.id)).map((f) => (
-                          <SelectItem key={f.id} value={f.id}>
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center justify-center w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full text-xs font-bold">
-                                {f.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                              </div>
-                              {f.name} 
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed">
-                <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <div className="max-w-xs mx-auto">
-                  <Select onValueChange={handleFormateurSelect}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un formateur" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formateurs.map((f) => (
-                        <SelectItem key={f.id} value={f.id}>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center justify-center w-6 h-6 bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-full text-xs font-bold">
-                              {f.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                            </div>
-                            {f.name} 
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <FormateursSwipe
+          formateurs={formateurs}
+          selectedIds={formateurIds}
+          onToggle={handleFormateurToggle}
+        />
 
         {/* Boutons d'action */}
         <div className="flex gap-4 justify-end">
