@@ -7,13 +7,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, ClipboardCheck, Euro, Users } from 'lucide-react';
 
-const currencyFormatter = new Intl.NumberFormat('fr-TN', {
-  style: 'currency',
-  currency: 'TND',
-  minimumFractionDigits: 2,
-});
+const formatAmount = (value) => {
+  const numeric = Number(value ?? 0);
+  if (!Number.isFinite(numeric)) return '0 TND';
+  const fraction = Math.round(Math.abs(numeric * 100)) % 100;
+  const formatter = new Intl.NumberFormat('fr-TN', {
+    style: 'currency',
+    currency: 'TND',
+    minimumFractionDigits: fraction === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+  return formatter.format(numeric);
+};
 
-const formatAmount = (value) => currencyFormatter.format(Number(value || 0));
+const formatPercent = (value) => {
+  if (value == null || value === '') return '';
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '';
+  const fraction = Math.round(Math.abs(numeric * 100)) % 100;
+  return fraction === 0 ? numeric.toFixed(0) : numeric.toFixed(2);
+};
 
 export default function PaiementsPage() {
   const [sessions, setSessions] = useState([]);
@@ -21,6 +34,9 @@ export default function PaiementsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editingParameters, setEditingParameters] = useState(false);
+
+  const tvaDisplay = formatPercent(systemParameters?.tva);
 
   useEffect(() => {
     fetchSessions();
@@ -60,12 +76,18 @@ export default function PaiementsPage() {
       if (!res.ok) throw new Error(data.error || 'Erreur lors de la sauvegarde');
       // recharge les sessions avec les nouveaux paramètres
       fetchSessions();
+      setEditingParameters(false);
     } catch (e) {
       console.error(e);
       alert('Erreur lors de la sauvegarde des paramètres');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingParameters(false);
+    fetchSessions();
   };
 
   return (
@@ -86,19 +108,25 @@ export default function PaiementsPage() {
                 <Users className="h-4 w-4 text-primary" />
                 Prix horaire formateur
               </p>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                className="border rounded px-2 py-1 w-full"
-                value={systemParameters.prixHeureFormation}
-                onChange={(e) =>
-                  setSystemParameters({
-                    ...systemParameters,
-                    prixHeureFormation: Number(e.target.value),
-                  })
-                }
-              />
+              {editingParameters ? (
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="border rounded px-2 py-1 w-full"
+                  value={systemParameters.prixHeureFormation}
+                  onChange={(e) =>
+                    setSystemParameters({
+                      ...systemParameters,
+                      prixHeureFormation: Number(e.target.value),
+                    })
+                  }
+                />
+              ) : (
+                <p className="text-lg font-semibold text-gray-900">
+                  {formatAmount(systemParameters.prixHeureFormation)}
+                </p>
+              )}
             </Card>
 
             {/* Coordination par session */}
@@ -107,19 +135,25 @@ export default function PaiementsPage() {
                 <ClipboardCheck className="h-4 w-4 text-primary" />
                 Coordination par session
               </p>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                className="border rounded px-2 py-1 w-full"
-                value={systemParameters.prixCoordinationFixe}
-                onChange={(e) =>
-                  setSystemParameters({
-                    ...systemParameters,
-                    prixCoordinationFixe: Number(e.target.value),
-                  })
-                }
-              />
+              {editingParameters ? (
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  className="border rounded px-2 py-1 w-full"
+                  value={systemParameters.prixCoordinationFixe}
+                  onChange={(e) =>
+                    setSystemParameters({
+                      ...systemParameters,
+                      prixCoordinationFixe: Number(e.target.value),
+                    })
+                  }
+                />
+              ) : (
+                <p className="text-lg font-semibold text-gray-900">
+                  {formatAmount(systemParameters.prixCoordinationFixe)}
+                </p>
+              )}
             </Card>
 
             {/* TVA appliquée */}
@@ -128,30 +162,45 @@ export default function PaiementsPage() {
                 <Euro className="h-4 w-4 text-primary" />
                 TVA appliquée (%)
               </p>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                step={0.1}
-                className="border rounded px-2 py-1 w-full"
-                value={systemParameters.tva}
-                onChange={(e) =>
-                  setSystemParameters({
-                    ...systemParameters,
-                    tva: Number(e.target.value),
-                  })
-                }
-              />
+              {editingParameters ? (
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.1}
+                  className="border rounded px-2 py-1 w-full"
+                  value={systemParameters.tva}
+                  onChange={(e) =>
+                    setSystemParameters({
+                      ...systemParameters,
+                      tva: Number(e.target.value),
+                    })
+                  }
+                />
+              ) : (
+                <p className="text-lg font-semibold text-gray-900">
+                  {tvaDisplay ? `${tvaDisplay}%` : '-'}
+                </p>
+              )}
             </Card>
 
-            {/* Bouton sauvegarder */}
-            <div className="col-span-3 flex justify-end mt-2">
-              <Button onClick={handleSaveParameters} disabled={saving}>
-                {saving ? 'Enregistrement...' : '💾 Enregistrer'}
-              </Button>
+            <div className="col-span-3 flex justify-end gap-2 mt-2">
+              {!editingParameters ? (
+                <Button onClick={() => setEditingParameters(true)}>Modifier</Button>
+              ) : (
+                <>
+                  <Button onClick={handleSaveParameters} disabled={saving}>
+                    {saving ? 'Enregistrement...' : ' Enregistrer'}
+                  </Button>
+                  <Button variant="outline" onClick={handleCancelEdit} disabled={saving}>
+                    Annuler
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
+        
       </div>
 
       <Card className="shadow">

@@ -165,7 +165,7 @@ export default function SessionPaiementPage() {
     const regroupement = Number(values.totalRegroupement) || 0;
     const heures = tutorat + regroupement;
     const montantBrut = heures * systemParameters.prixHeureFormation;
-    const montantNet = montantBrut / (1 + (systemParameters.tva / 100));
+    const montantNet = montantBrut - (montantBrut * (systemParameters.tva / 100));
     return { heures, montantBrut, montantNet };
   };
 
@@ -455,8 +455,8 @@ export default function SessionPaiementPage() {
                     {coordinateurFiche
                       ? formatAmount(coordinateurFiche.montantNet)
                       : formatAmount(
-                          (systemParameters?.prixCoordinationFixe || 0) /
-                            (1 + (systemParameters?.tva || 0) / 100)
+                          (systemParameters?.prixCoordinationFixe || 0) -
+                            ((systemParameters?.prixCoordinationFixe || 0) * (systemParameters?.tva || 0) / 100)
                         )}
                   </p>
                 </div>
