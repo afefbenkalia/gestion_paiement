@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import CoordinateurSidebar from '@/components/coordinateur-sidebar'
 import { Loader2 } from 'lucide-react'
 import FicheDetail from '@/components/fiche-detail'
 
@@ -50,14 +49,14 @@ export default function CoordinateurFichePage() {
   }, [session, status, sessionId, router])
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center py-12">
       <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
       <span className="ml-3">Chargement de la fiche...</span>
     </div>
   )
 
   if (error) return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center py-12">
       <div className="text-red-600">{error}</div>
     </div>
   )
@@ -65,17 +64,12 @@ export default function CoordinateurFichePage() {
   if (!fiche) return null
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <CoordinateurSidebar />
-      <main className="flex-1 p-8">
-        <div className="w-11/12 mx-auto px-4">
-          <FicheDetail fiche={fiche} />
+    <div className="w-11/12 mx-auto px-4">
+      <FicheDetail fiche={fiche} />
 
-          <div className="mt-4">
-            <button onClick={() => router.push('/coordinateur/historique')} className="px-4 py-2 bg-gray-100 rounded-lg">Retour</button>
-          </div>
-        </div>
-      </main>
+      <div className="mt-4">
+        <button onClick={() => router.push('/coordinateur/historique')} className="px-4 py-2 bg-gray-100 rounded-lg">Retour</button>
+      </div>
     </div>
   )
 }

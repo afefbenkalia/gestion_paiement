@@ -3,7 +3,6 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { FormateurSidebar } from '@/components/formateur-sidebar'
 
 export default function HistoriquePage() {
   const { data: session, status } = useSession()
@@ -11,6 +10,8 @@ export default function HistoriquePage() {
   const [fiches, setFiches] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [query, setQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
 
   useEffect(() => {
     if (status === 'loading') return
@@ -47,44 +48,77 @@ export default function HistoriquePage() {
     fetchFiches()
   }, [session, status, router])
 
+  const filtered = fiches.filter((f) => {
+    const q = query.trim().toLowerCase()
+    if (statusFilter && f.etat !== statusFilter) return false
+    if (!q) return true
+    return (
+      (f.numMemoire && f.numMemoire.toLowerCase().includes(q)) ||
+      (f.periode && f.periode.toLowerCase().includes(q)) ||
+      (String(f.montantTotalNet || '').toLowerCase().includes(q))
+    )
+  })
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <FormateurSidebar />
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="bg-gradient-to-r from-white to-gray-50 p-6 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">Historique — Fiches de paie</h2>
+            <p className="text-sm text-gray-500 mt-1">Liste des fiches traitées pour vos sessions</p>
+          </div>
+         
+        </div>
 
-      <main className="flex-1 p-8">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">Historique - Fiches de paie</h2>
+        <div className="mt-6 bg-white border border-gray-100 rounded-lg shadow-sm">
+          {loading && (
+            <div className="p-6 text-gray-600">Chargement des fiches...</div>
+          )}
 
-          {loading && <div className="text-gray-600">Chargement des fiches...</div>}
-          {error && <div className="text-red-600">{error}</div>}
+          {error && (
+            <div className="p-6 text-red-600">{error}</div>
+          )}
 
           {!loading && !error && (
-            <div className="space-y-3">
+            <div className="overflow-x-auto">
               {fiches.length === 0 ? (
-                <div className="text-gray-600">Aucune fiche trouvée.</div>
+                <div className="p-6 text-gray-500">Aucune fiche trouvée.</div>
               ) : (
-                fiches.map((f) => (
-                  <div key={f.id} className="p-4 border rounded-md flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{f.numMemoire}</div>
-                      <div className="text-sm text-gray-500">Période: {f.periode} - État: {f.etat}</div>
-                      <div className="text-sm text-gray-600">Net: {f.montantTotalNet ?? 'N/A'}</div>
-                    </div>
-                    <div className="ml-4">
-                      <a
-                        href={f.sessionId ? `/formateur/fiches/${f.sessionId}` : `/formateur/fiches/${f.id}`}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                      >
-                        Voir détail
-                      </a>
-                    </div>
-                  </div>
-                ))
+                <table className="min-w-full divide-y divide-gray-100">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Numéro</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Période</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant net</th>
+                      <th className="px-6 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {filtered.map((f) => (
+                      <tr key={f.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{f.numMemoire}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{f.periode}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(f.createdAt).toLocaleDateString('fr-FR')}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">{f.montantTotalNet ? Number(f.montantTotalNet).toLocaleString('fr-FR', { style: 'currency', currency: 'dtn' }) : 'N/A'}</td>
+                       
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <a
+                            href={f.sessionId ? `/formateur/fiches/${f.sessionId}` : `/formateur/fiches/${f.id}`}
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                          >
+                            Voir
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           )}
         </div>
-      </main>
+      </div>
     </div>
   )
 }

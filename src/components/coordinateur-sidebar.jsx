@@ -59,7 +59,7 @@ export default function CoordinateurSidebar() {
         </Link>
 
         <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={() => signOut({ callbackUrl: '/' })}
           className="w-full text-left mt-3 flex items-center gap-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100"
         >
           <LogOut className="w-4 h-4" />

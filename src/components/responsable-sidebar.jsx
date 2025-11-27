@@ -175,7 +175,7 @@ export function ResponsableSidebar() {
           <span>Settings</span>
         </Link>
         <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={() => signOut({ callbackUrl: '/' })}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
         >
           <LogOut className="h-5 w-5" />

@@ -3,7 +3,6 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
-import CoordinateurSidebar from '@/components/coordinateur-sidebar'
 import CoordinateurSessionsPage from './sessions/page'
 
 export default function CoordinateurDashboard() {
@@ -42,13 +41,10 @@ export default function CoordinateurDashboard() {
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen bg-gray-50">
-        <CoordinateurSidebar />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Chargement...</p>
-          </div>
+      <div className="flex-1 flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Chargement...</p>
         </div>
       </div>
     )
