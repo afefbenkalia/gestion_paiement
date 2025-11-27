@@ -11,7 +11,7 @@ import {
   getSystemParameters,
   SESSION_PAIEMENT_INCLUDE,
 } from '@/lib/paiement';
-
+//src/app/api/responsable/paiment/[session]/route.js
 const normalizePositive = (value) => {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed < 0) return 0;
