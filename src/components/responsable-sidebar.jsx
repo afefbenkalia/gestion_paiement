@@ -14,7 +14,8 @@ import {
   FileSpreadsheet,
   Settings,
   LogOut,
-  LayoutDashboard
+  LayoutDashboard,
+  UserRoundPen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -164,16 +165,16 @@ export function ResponsableSidebar() {
       {/* Bottom Actions */}
       <div className="border-t border-gray-200 p-4 space-y-1">
         <Link
-          href="/responsable/settings"
+          href="/responsable/profile"
           className={cn(
             'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-            isActive('/responsable/settings')
+            isActive('/responsable/profile')
               ? 'bg-blue-100 text-blue-700'
               : 'text-gray-700 hover:bg-gray-100'
           )}
         >
-          <Settings className="h-5 w-5" />
-          <span>Settings</span>
+          <UserRoundPen className="h-5 w-5" />
+          <span>Profile </span>
         </Link>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
