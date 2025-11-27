@@ -14,6 +14,8 @@ export default function ExportExcelPage() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const paramsString = useMemo(() => {
     const params = new URLSearchParams();
@@ -46,6 +48,17 @@ export default function ExportExcelPage() {
     fetchRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramsString]);
+
+  // Reset to first page when filters change or rows reload
+  useEffect(() => {
+    setPage(1);
+  }, [paramsString]);
+
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  const pagedRows = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    return rows.slice(startIndex, startIndex + pageSize);
+  }, [rows, page]);
 
   const downloadExcel = async () => {
     try {
@@ -190,7 +203,6 @@ export default function ExportExcelPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Actions</TableHead>
-                  <TableHead>ID</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>N° Mémoire</TableHead>
                   <TableHead>Session</TableHead>
@@ -203,7 +215,7 @@ export default function ExportExcelPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map((f) => (
+                {pagedRows.map((f) => (
                   <TableRow key={f.id}>
                     <TableCell>
                       <button
@@ -214,10 +226,9 @@ export default function ExportExcelPage() {
                         <FileSpreadsheet className="h-5 w-5 text-green-600" />
                       </button>
                     </TableCell>
-                    <TableCell>{f.id}</TableCell>
                     <TableCell>{f.typeFiche}</TableCell>
                     <TableCell className="font-mono">{f.numMemoire}</TableCell>
-                    <TableCell>{f.session ? `${f.session.id} - ${f.session.titre || ''}` : ''}</TableCell>
+                    <TableCell>{f.session ? ` ${f.session.titre || ''}` : ''}</TableCell>
                     <TableCell>{f.periode || ''}</TableCell>
                     <TableCell>{f.formateur?.name || f.coordinateur?.name || ''}</TableCell>
                     <TableCell>{Number(f.montantTotalBrut || 0).toFixed(2)}</TableCell>
@@ -228,6 +239,27 @@ export default function ExportExcelPage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {rows.length > 0 && (
+            <div className="mt-4 flex items-center justify-between">
+              <div className="text-sm text-gray-600">Page {page} sur {totalPages}</div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 disabled:opacity-50"
+                >
+                  Précédent
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="px-3 py-1 rounded-md border border-gray-300 bg-white text-gray-700 disabled:opacity-50"
+                >
+                  Suivant
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
