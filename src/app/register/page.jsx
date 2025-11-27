@@ -4,6 +4,32 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 
+function isSecurePassword(password) {
+  const hasMinLength = password.length >= 6;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+
+  return hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
+}
+
+function getPasswordStrength(password) {
+  if (!password) return { strength: 'none', message: '' };
+  
+  const checks = [
+    password.length >= 6,
+    /[A-Z]/.test(password),
+    /[a-z]/.test(password),
+    /[0-9]/.test(password)
+  ];
+  
+  const passedChecks = checks.filter(Boolean).length;
+  
+  if (passedChecks === 4) return { strength: 'strong', message: '✅ Mot de passe sécurisé' };
+  if (passedChecks === 3) return { strength: 'medium', message: '⚠️ Mot de passe acceptable' };
+  return { strength: 'weak', message: '❌ Mot de passe faible' };
+}
+
 export default function RegisterPage() {
   const [form, setForm] = useState({
     name: '',
@@ -14,10 +40,24 @@ export default function RegisterPage() {
     cv: null,
   })
   const [message, setMessage] = useState('')
+  const [passwordFeedback, setPasswordFeedback] = useState('')
   const router = useRouter()
+
+  function handlePasswordChange(e) {
+    const password = e.target.value
+    setForm({ ...form, password })
+    const feedback = getPasswordStrength(password)
+    setPasswordFeedback(feedback.message)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
+    
+    if (!isSecurePassword(form.password)) {
+      setMessage("❌ Le mot de passe doit contenir au moins 6 caractères, une majuscule, une minuscule et un chiffre.")
+      return
+    }
+
     const data = new FormData()
     data.append("name", form.name)
     data.append("email", form.email)
@@ -33,7 +73,6 @@ export default function RegisterPage() {
 
     const result = await res.json()
     if (res.ok) {
-      // Tenter une connexion automatique pour que la session corresponde au nouvel utilisateur
       const signRes = await signIn('credentials', {
         redirect: false,
         email: form.email,
@@ -41,7 +80,6 @@ export default function RegisterPage() {
       })
 
       if (signRes && signRes.error) {
-        // Même si la connexion automatique échoue, rediriger vers pending (compte créé)
         setMessage("✅ Compte créé, en attente de validation du responsable. (connexion automatique échouée)")
         router.push('/pending')
       } else {
@@ -74,14 +112,25 @@ export default function RegisterPage() {
           required
         />
 
-        <input
-          type="password"
-          placeholder="Mot de passe"
-          className="border p-2 rounded"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          required
-        />
+        <div>
+          <input
+            type="password"
+            placeholder="Mot de passe"
+            className="border p-2 rounded w-full"
+            value={form.password}
+            onChange={handlePasswordChange}
+            required
+          />
+          {passwordFeedback && (
+            <p className={`text-xs mt-1 ${
+              passwordFeedback.includes('✅') ? 'text-green-600' :
+              passwordFeedback.includes('⚠️') ? 'text-yellow-600' :
+              'text-red-600'
+            }`}>
+              {passwordFeedback}
+            </p>
+          )}
+        </div>
 
         <select
           className="border p-2 rounded"
@@ -109,7 +158,9 @@ export default function RegisterPage() {
           onChange={(e) => setForm({ ...form, cv: e.target.files[0] })}
         />
 
-        <button className="bg-blue-600 text-white p-2 rounded">S'inscrire</button>
+        <button className="bg-blue-600 text-white p-2 rounded" disabled={!isSecurePassword(form.password)}>
+          S'inscrire
+        </button>
         {message && <p className="text-center text-sm mt-2">{message}</p>}
       </form>
     </div>

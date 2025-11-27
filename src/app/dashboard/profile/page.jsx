@@ -1,131 +1,224 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+
+function isSecurePassword(password) {
+  const hasMinLength = password.length >= 6;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+
+  return hasMinLength && hasUpperCase && hasLowerCase && hasNumber;
+}
+
+function getPasswordStrength(password) {
+  if (!password) return { strength: 'none', message: '' };
+  
+  const checks = [
+    password.length >= 6,
+    /[A-Z]/.test(password),
+    /[a-z]/.test(password),
+    /[0-9]/.test(password)
+  ];
+  
+  const passedChecks = checks.filter(Boolean).length;
+  
+  if (passedChecks === 4) return { strength: 'strong', message: '✅ Mot de passe sécurisé' };
+  if (passedChecks === 3) return { strength: 'medium', message: '⚠️ Mot de passe acceptable' };
+  return { strength: 'weak', message: '❌ Mot de passe faible' };
+}
 
 export default function ProfilePage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [profileForm, setProfileForm] = useState({ name: "", email: "" })
-  const [pwForm, setPwForm] = useState({ currentPassword: "", newPassword: "", confirm: "" })
-  const [msg, setMsg] = useState(null)
+  const [editMode, setEditMode] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordFeedback, setPasswordFeedback] = useState('')
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    let mounted = true
-    fetch("/api/profile")
-      .then((res) => res.json())
-      .then((data) => {
-        if (!mounted) return
-        if (data.error) {
-          setMsg({ type: "error", text: data.error })
-          setLoading(false)
-          return
-        }
+    if (status === 'unauthenticated') router.push('/login')
+    if (session?.user?.id) fetchProfile()
+  }, [session, status])
+
+  async function fetchProfile() {
+    try {
+      const res = await fetch(`/api/profile?id=${session.user.id}`)
+      if (res.ok) {
+        const data = await res.json()
         setUser(data)
-        setProfileForm({ name: data.name || "", email: data.email || "" })
-        setLoading(false)
-      })
-      .catch(() => {
-        if (!mounted) return
-        setMsg({ type: "error", text: "Erreur réseau" })
-        setLoading(false)
-      })
-    return () => (mounted = false)
-  }, [])
-
-  async function submitProfile(e) {
-    e.preventDefault()
-    setMsg(null)
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profileForm),
-      })
-      const data = await res.json()
-      if (!res.ok) return setMsg({ type: "error", text: data.error || "Erreur" })
-      setUser(data.user)
-      setMsg({ type: "success", text: data.message })
-    } catch (err) {
-      setMsg({ type: "error", text: "Erreur réseau" })
+      }
+    } catch (error) {
+      console.error('Erreur:', error)
     }
   }
 
-  async function submitPassword(e) {
-    e.preventDefault()
-    setMsg(null)
-    if (pwForm.newPassword !== pwForm.confirm) return setMsg({ type: "error", text: "Les nouveaux mots de passe ne correspondent pas" })
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword }),
-      })
-      const data = await res.json()
-      if (!res.ok) return setMsg({ type: "error", text: data.error || "Erreur" })
-      setPwForm({ currentPassword: "", newPassword: "", confirm: "" })
-      setMsg({ type: "success", text: data.message })
-    } catch (err) {
-      setMsg({ type: "error", text: "Erreur réseau" })
+  function handlePasswordChange(e) {
+    const password = e.target.value
+    setNewPassword(password)
+    if (password) {
+      const feedback = getPasswordStrength(password)
+      setPasswordFeedback(feedback.message)
+    } else {
+      setPasswordFeedback('')
     }
   }
 
-  if (loading) return <p className="p-6">Chargement...</p>
+  async function handleUpdatePassword(e) {
+    e.preventDefault()
+    setMessage('')
+
+    if (!newPassword) {
+      setMessage('❌ Veuillez entrer un nouveau mot de passe')
+      return
+    }
+
+    if (!isSecurePassword(newPassword)) {
+      setMessage('❌ Le mot de passe doit contenir au moins 6 caractères, une majuscule, une minuscule et un chiffre.')
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setMessage('❌ Les mots de passe ne correspondent pas')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: session.user.id,
+          password: newPassword,
+        }),
+      })
+
+      if (res.ok) {
+        setMessage('✅ Mot de passe mis à jour avec succès')
+        setNewPassword('')
+        setConfirmPassword('')
+        setPasswordFeedback('')
+        setEditMode(false)
+      } else {
+        const error = await res.json()
+        setMessage('❌ ' + error.error)
+      }
+    } catch (error) {
+      setMessage('❌ Erreur lors de la mise à jour')
+      console.error(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (status === 'loading' || !user) return <p className="p-4">Chargement...</p>
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-6 shadow rounded mt-8 space-y-6">
-      <h1 className="text-2xl font-bold">Mon profil</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+        <h2 className="text-center text-2xl font-semibold mb-6">Mon Profil</h2>
 
-      {msg && (
-        <div className={`p-3 rounded ${msg.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>
-          {msg.text}
+        <div className="space-y-4 mb-6">
+          <div>
+            <p className="text-gray-600 text-sm">Nom</p>
+            <p className="font-medium">{user.name}</p>
+          </div>
+          <div>
+            <p className="text-gray-600 text-sm">Email</p>
+            <p className="font-medium">{user.email}</p>
+          </div>
+          <div>
+            <p className="text-gray-600 text-sm">Rôle</p>
+            <p className="font-medium">{user.role}</p>
+          </div>
+          {user.specialite && (
+            <div>
+              <p className="text-gray-600 text-sm">Spécialité</p>
+              <p className="font-medium">{user.specialite}</p>
+            </div>
+          )}
         </div>
-      )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="col-span-1">
-          <h2 className="font-semibold mb-2">Informations</h2>
-          <p><strong>Email :</strong> {user.email}</p>
-          <p><strong>Rôle :</strong> {user.role}</p>
-          <p><strong>Créé le :</strong> {new Date(user.createdAt).toLocaleDateString()}</p>
-        </div>
+        {!editMode ? (
+          <button
+            onClick={() => setEditMode(true)}
+            className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+          >
+            Changer le mot de passe
+          </button>
+        ) : (
+          <form onSubmit={handleUpdatePassword} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Nouveau mot de passe</label>
+              <input
+                type="password"
+                placeholder="Nouveau mot de passe"
+                className="border p-2 rounded w-full"
+                value={newPassword}
+                onChange={handlePasswordChange}
+                required
+              />
+              {passwordFeedback && (
+                <p className={`text-xs mt-1 ${
+                  passwordFeedback.includes('✅') ? 'text-green-600' :
+                  passwordFeedback.includes('⚠️') ? 'text-yellow-600' :
+                  'text-red-600'
+                }`}>
+                  {passwordFeedback}
+                </p>
+              )}
+            </div>
 
-        <div className="col-span-1">
-          <form onSubmit={submitProfile} className="space-y-3">
-            <h2 className="font-semibold">Modifier le profil</h2>
             <div>
-              <label className="block text-sm">Nom</label>
-              <input className="w-full border p-2 rounded" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} />
+              <label className="block text-sm font-medium mb-1">Confirmer le mot de passe</label>
+              <input
+                type="password"
+                placeholder="Confirmer le mot de passe"
+                className="border p-2 rounded w-full"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
             </div>
-            <div>
-              <label className="block text-sm">Email</label>
-              <input type="email" className="w-full border p-2 rounded" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} />
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={!isSecurePassword(newPassword) || newPassword !== confirmPassword || loading}
+                className="flex-1 bg-green-600 text-white p-2 rounded hover:bg-green-700 disabled:bg-gray-400"
+              >
+                {loading ? 'Mise à jour...' : 'Mettre à jour'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditMode(false)
+                  setNewPassword('')
+                  setConfirmPassword('')
+                  setPasswordFeedback('')
+                  setMessage('')
+                }}
+                className="flex-1 bg-gray-400 text-white p-2 rounded hover:bg-gray-500"
+              >
+                Annuler
+              </button>
             </div>
-            <div>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded">Enregistrer</button>
-            </div>
+
+            {message && (
+              <p className={`text-sm text-center ${
+                message.includes('✅') ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {message}
+              </p>
+            )}
           </form>
-        </div>
-      </div>
-
-      <div>
-        <form onSubmit={submitPassword} className="space-y-3 max-w-md">
-          <h2 className="font-semibold">Changer le mot de passe</h2>
-          <div>
-            <label className="block text-sm">Mot de passe actuel</label>
-            <input type="password" className="w-full border p-2 rounded" value={pwForm.currentPassword} onChange={(e) => setPwForm({ ...pwForm, currentPassword: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-sm">Nouveau mot de passe</label>
-            <input type="password" className="w-full border p-2 rounded" value={pwForm.newPassword} onChange={(e) => setPwForm({ ...pwForm, newPassword: e.target.value })} />
-          </div>
-          <div>
-            <label className="block text-sm">Confirmer le nouveau mot de passe</label>
-            <input type="password" className="w-full border p-2 rounded" value={pwForm.confirm} onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })} />
-          </div>
-          <div>
-            <button className="px-4 py-2 bg-red-600 text-white rounded">Changer le mot de passe</button>
-          </div>
-        </form>
+        )}
       </div>
     </div>
   )
