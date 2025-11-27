@@ -267,18 +267,6 @@ export default function FormateurDetailPage() {
                 const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
                 dureeText = `${totalDays} jour${totalDays > 1 ? 's' : ''}`;
               }
-              
-              // Calcul de la progression réelle
-              let progression = 0;
-              if (status === 'Terminée') {
-                progression = 100;
-              } else if (status === 'En cours') {
-                const elapsed = now - start;
-                const total = end - start;
-                progression = Math.min(Math.round((elapsed / total) * 100), 99);
-              } else {
-                progression = 0; // À venir: pas de progression
-              }
 
               return (
                 <div
@@ -320,24 +308,6 @@ export default function FormateurDetailPage() {
                       <p className="font-medium">{session.formateurs?.length || 1}</p>
                     </div>
                   </div>
-
-                  {/* Progress bar */}
-                  {status !== 'À venir' && (
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>Progression</span>
-                        <span>{progression}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all ${
-                            status === 'Terminée' ? 'bg-green-500' : 'bg-blue-500'
-                          }`}
-                          style={{ width: `${progression}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
 
                   <Link
                     href={`/responsable/sessions/${session.id}`}
