@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth';
 
 // app/api/responsable/sessions/route.js
 
-// GET - Récupérer toutes les sessions (sans filtres, car le filtrage se fait côté client)
+// GET - Récupérer les sessions avec filtrage optionnel par formateur ou coordinateur
 export async function GET(request) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,7 +15,28 @@ export async function GET(request) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
+    // Extraire les paramètres de requête
+    const { searchParams } = new URL(request.url);
+    const formateurId = searchParams.get('formateurId');
+    const coordinateurId = searchParams.get('coordinateurId');
+
+    // Construire les filtres
+    const whereClause = {};
+    
+    if (formateurId) {
+      whereClause.formateurs = {
+        some: {
+          formateurId: parseInt(formateurId, 10),
+        },
+      };
+    }
+    
+    if (coordinateurId) {
+      whereClause.coordinateurId = parseInt(coordinateurId, 10);
+    }
+
     const sessions = await prisma.session.findMany({
+      where: whereClause,
       include: {
         formateurs: {
           include: {

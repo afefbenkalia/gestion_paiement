@@ -1,8 +1,8 @@
 'use client';
-
+// src/app/responsable/users/page.jsx
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Trash } from 'lucide-react';
+import { Trash, UserCircle } from 'lucide-react';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -46,9 +46,15 @@ export default function UsersPage() {
       });
 
       if (res.ok) {
-        fetchUsers();
+        // Mise à jour locale sans rechargement
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user.id === userId ? { ...user, status: newStatus } : user
+          )
+        );
       } else {
         const error = await res.json();
+        console.error('Erreur:', error);
       }
     } catch (error) {
       console.error('Erreur:', error);
@@ -215,6 +221,14 @@ export default function UsersPage() {
                           </div>
                         </label>
 
+                        <Link
+                          href={`/responsable/formateurs/${user.id}`}
+                          title="Voir profil"
+                          className="p-2 rounded text-gray-600 hover:bg-gray-100 transition"
+                        >
+                          <UserCircle className="h-5 w-5" />
+                        </Link>
+
                         <button
                           onClick={() => handleDelete(user.id, user.name)}
                           title="Supprimer"
@@ -317,6 +331,14 @@ export default function UsersPage() {
                             <span className={`absolute left-0 top-0.5 w-5 h-5 bg-white rounded-full shadow transform transition-transform ${user.status === 'ACTIVE' ? 'translate-x-5' : 'translate-x-0'}`} />
                           </div>
                         </label>
+
+                        <Link
+                          href={`/responsable/coordinateurs/${user.id}`}
+                          title="Voir profil"
+                          className="p-2 rounded text-gray-600 hover:bg-gray-100 transition"
+                        >
+                          <UserCircle className="h-5 w-5" />
+                        </Link>
 
                         <button
                           onClick={() => handleDelete(user.id, user.name)}
