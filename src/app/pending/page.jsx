@@ -69,7 +69,7 @@ export default function PendingPage() {
   }, [router, session, sessionStatus])
 
   const handleLogout = async () => {
-    await signOut({ redirect: true, callbackUrl: '/login' })
+    await signOut({ redirect: true, callbackUrl: '/' })
   }
 
   if (isLoading) {

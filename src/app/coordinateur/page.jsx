@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import CoordinateurSessionsPage from './sessions/page'
 
 export default function CoordinateurDashboard() {
   const { data: session, status } = useSession()
@@ -33,11 +34,14 @@ export default function CoordinateurDashboard() {
       router.push('/pending')
       return
     }
+
+    // Par défaut afficher la page des sessions (on reste sur la même route)
+    // Pas de redirection nécessaire — la page va rendre le composant sessions ci-dessous
   }, [session, status, router])
 
   if (status === 'loading') {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex-1 flex items-center justify-center py-12">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Chargement...</p>
@@ -46,26 +50,11 @@ export default function CoordinateurDashboard() {
     )
   }
 
-  if (!session || session.user.role !== 'COORDINATEUR' || (session.user.status !== 'ACTIVE')) {
-    return null
+  // lorsque l'auth est validée, afficher la liste des sessions par défaut
+  if (session && session.user && session.user.role === 'COORDINATEUR' && session.user.status === 'ACTIVE') {
+    return <CoordinateurSessionsPage />
   }
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-      <div className="bg-white p-8 rounded-lg shadow-md text-center">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">
-          Bienvenue, {session.user.name}
-        </h1>
-        <p className="text-lg text-gray-600">
-          Votre rôle : <span className="font-semibold text-green-600">{session.user.role}</span>
-        </p>
-        <div className="mt-6 p-4 bg-green-50 rounded-lg">
-          <p className="text-green-800">
-            Vous pouvez gérer les formateurs et leurs fiches de paie.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
+  return null
 }
 
