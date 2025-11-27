@@ -1,18 +1,34 @@
 'use client';
-//src/app/responsable/paiements/session/[id]/page.jsx
+
+// src/app/responsable/paiements/session/[id]/page.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ClipboardCheck, Loader2, ShieldCheck, Users } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { 
+  ArrowLeft, 
+  ClipboardCheck, 
+  Loader2, 
+  ShieldCheck, 
+  Users, 
+  Wallet, 
+  FileText, 
+  Download, 
+  Save, 
+  Calculator,
+  CheckCircle2,
+  AlertCircle,
+  Banknote
+} from 'lucide-react';
 
 const currencyFormatter = new Intl.NumberFormat('fr-TN', {
   style: 'currency',
   currency: 'TND',
-  minimumFractionDigits: 2,
+  minimumFractionDigits: 3,
 });
 
 const formatAmount = (value) => currencyFormatter.format(Number(value || 0));
@@ -146,7 +162,7 @@ export default function SessionPaiementPage() {
         totalTutorat: Number(values.totalTutorat) || 0,
         totalRegroupement: Number(values.totalRegroupement) || 0,
       },
-      'Fiche formateur enregistrée.'
+      'Fiche formateur enregistrée avec succès.'
     );
   };
 
@@ -155,7 +171,7 @@ export default function SessionPaiementPage() {
   };
 
   const handleReglementSubmit = () => {
-    runAction({ type: 'REGLEMENT' }, 'Mémoire de règlement généré.');
+    runAction({ type: 'REGLEMENT' }, 'Mémoire de règlement généré avec succès.');
   };
 
   const computePreview = (formateurId) => {
@@ -172,405 +188,373 @@ export default function SessionPaiementPage() {
   const coordinateurFiche = data?.fiches?.coordinateur;
   const reglementFiche = data?.fiches?.reglement;
 
-  if (!sessionId) {
-    return (
-      <div className="p-8">
-        <p className="text-destructive">Identifiant de session manquant.</p>
-      </div>
-    );
-  }
+  if (!sessionId) return <div className="p-8 text-red-600">Identifiant de session manquant.</div>;
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-96 text-muted-foreground gap-4">
-        <Loader2 className="h-8 w-8 animate-spin" />
-        Chargement des fiches de paiement…
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 text-slate-500 gap-4">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+        <p className="font-medium animate-pulse">Chargement du dossier financier...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-3xl mx-auto py-12 text-center space-y-4">
-        <p className="text-destructive">{error}</p>
-        <Button onClick={() => router.back()} variant="outline">
-          Retour
-        </Button>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
+        <div className="bg-red-50 p-6 rounded-lg text-center border border-red-100 max-w-md">
+          <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+          <h3 className="text-lg font-bold text-red-700">Erreur de chargement</h3>
+          <p className="text-red-600 mb-4">{error}</p>
+          <Button onClick={() => router.back()} variant="outline" className="bg-white hover:bg-red-50 border-red-200 text-red-700">
+            Retourner à la liste
+          </Button>
+        </div>
       </div>
     );
   }
 
-  if (!data) {
-    return null;
-  }
+  if (!data) return null;
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl space-y-6">
-      <div className="flex flex-col gap-3">
-        <Button
-          variant="ghost"
-          className="w-fit px-0 text-muted-foreground"
-          asChild
-        >
-          <Link href="/responsable/paiements" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Retour aux paiements
-          </Link>
-        </Button>
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold">{data.session.titre}</h1>
-            {reglementFiche ? (
-              <Badge className="bg-emerald-100 text-emerald-800">Mémoire validé</Badge>
+    <div className="min-h-screen bg-slate-50/50 pb-20">
+      
+      {/* --- En-tête --- */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" asChild className="text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                <Link href="/responsable/paiements">
+                  <ArrowLeft className="h-5 w-5" />
+                </Link>
+              </Button>
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-slate-900 flex items-center gap-2">
+                  {data.session.titre}
+                  {reglementFiche ? (
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-200">
+                      <CheckCircle2 className="w-3 h-3 mr-1" /> Validé
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" /> En cours
+                    </Badge>
+                  )}
+                </h1>
+                <p className="text-slate-500 text-sm">{data.session.periode}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs md:text-sm text-slate-600">
+              <Banknote className="w-4 h-4 text-blue-600" />
+              <span>Prix Heure: <strong>{formatAmount(systemParameters?.prixHeureFormation)}/h</strong></span>
+              <Separator orientation="vertical" className="h-4 bg-slate-300" />
+              <span>TVA: <strong>{systemParameters?.tva}%</strong></span>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
+        
+        {/* Feedback Message */}
+        {feedback && (
+          <div className={`flex items-center gap-3 p-4 rounded-lg border shadow-sm animate-in slide-in-from-top-2 ${
+            feedback.type === 'success' 
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+             {feedback.type === 'success' ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+             <p className="font-medium">{feedback.message}</p>
+          </div>
+        )}
+
+        {/* --- Info Grid --- */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="md:col-span-4 bg-white border-slate-200 shadow-sm">
+            <CardContent className="p-4 md:p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: "Classe", value: data.session.classe },
+                { label: "Spécialité", value: data.session.specialite },
+                { label: "Promotion", value: data.session.promotion },
+                { label: "Niveau", value: data.session.niveau }
+              ].map((item, idx) => (
+                <div key={idx} className="space-y-1">
+                  <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{item.label}</p>
+                  <p className="text-slate-900 font-medium truncate" title={item.value || '-'}>{item.value || '—'}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* --- Formateurs Section --- */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              Fiches Formateurs
+            </h2>
+            <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+              {data.formateurs.length} intervenant(s)
+            </Badge>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {data.formateurs.length === 0 ? (
+              <Card className="border-dashed border-slate-300 bg-slate-50/50 p-8 text-center text-slate-500">
+                <Users className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+                <p>Aucun formateur assigné à cette session.</p>
+              </Card>
             ) : (
-              <Badge variant="secondary" className="bg-amber-100 text-amber-800">
-                En attente
-              </Badge>
+              data.formateurs.map((formateur) => {
+                const preview = computePreview(formateur.id);
+                const isSaved = !!formateur.fiche;
+                
+                return (
+                  <Card 
+                    key={formateur.id} 
+                    className={`transition-all duration-200 border-slate-200 shadow-sm hover:shadow-md ${isSaved ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-amber-400'}`}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex flex-col lg:flex-row gap-6">
+                        
+                        {/* Info Identité */}
+                        <div className="lg:w-1/4 space-y-1">
+                          <div className="flex items-center gap-2">
+                             <h3 className="font-bold text-slate-900">{formateur.name}</h3>
+                             {isSaved && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                          </div>
+                          <p className="text-sm text-slate-500 truncate">{formateur.email}</p>
+                          <div className="text-xs text-slate-400 mt-2 space-y-1">
+                             <p>CIN: <span className="font-mono text-slate-600">{formateur.cin || '—'}</span></p>
+                             <p>RIB: <span className="font-mono text-slate-600">{formateur.rib || '—'}</span></p>
+                          </div>
+                        </div>
+
+                        {/* Inputs Heures */}
+                        <div className="lg:w-1/3 grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-slate-600 uppercase">Tutorat (H)</label>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="0"
+                                className="bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 transition-colors pr-8 font-mono"
+                                value={formateurValues[formateur.id]?.totalTutorat ?? ''}
+                                onChange={(e) => handleFormateurChange(formateur.id, 'totalTutorat', e.target.value)}
+                              />
+                              <span className="absolute right-3 top-2 text-xs text-slate-400">h</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-slate-600 uppercase">Regroup (H)</label>
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="0"
+                                className="bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 transition-colors pr-8 font-mono"
+                                value={formateurValues[formateur.id]?.totalRegroupement ?? ''}
+                                onChange={(e) => handleFormateurChange(formateur.id, 'totalRegroupement', e.target.value)}
+                              />
+                              <span className="absolute right-3 top-2 text-xs text-slate-400">h</span>
+                            </div>
+                          </div>
+                          <div className="col-span-2 flex justify-between items-center bg-slate-100 rounded px-2 py-1">
+                             <span className="text-xs text-slate-500">Total Heures</span>
+                             <span className="text-sm font-bold text-slate-700 font-mono">{preview.heures} h</span>
+                          </div>
+                        </div>
+
+                        {/* Calcul & Actions */}
+                        <div className="lg:flex-1 flex flex-col justify-between gap-4">
+                           {/* Boite Financière */}
+                           <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-100 flex justify-between items-center">
+                              <div>
+                                <p className="text-xs text-slate-500 uppercase mb-1">Montant Brut</p>
+                                <p className="text-sm font-medium text-slate-700">{formatAmount(preview.montantBrut)}</p>
+                              </div>
+                              <Separator orientation="vertical" className="h-8 bg-blue-200" />
+                              <div className="text-right">
+                                <p className="text-xs text-emerald-600 font-bold uppercase mb-1">Net à payer</p>
+                                <p className="text-lg font-bold text-emerald-700">{formatAmount(preview.montantNet)}</p>
+                              </div>
+                           </div>
+
+                           <div className="flex justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-slate-200 text-slate-600 hover:text-blue-600 hover:bg-white"
+                                disabled={!isSaved || downloadKey === `formation-${formateur.id}`}
+                                onClick={() =>
+                                  downloadPdf({
+                                    key: `formation-${formateur.id}`,
+                                    filename: `fiche-${formateur.name.replace(/\s+/g, '_')}.pdf`,
+                                    payload: { sessionId: data.session.id, type: 'FORMATION', formateurId: formateur.id },
+                                  })
+                                }
+                              >
+                                {downloadKey === `formation-${formateur.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+                                PDF
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleFormateurSubmit(formateur.id)}
+                                disabled={pendingActionId === formateur.id}
+                                className={isSaved ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"}
+                              >
+                                {pendingActionId === formateur.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (isSaved ? <Save className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />)}
+                                {isSaved ? 'Mettre à jour' : 'Enregistrer'}
+                              </Button>
+                           </div>
+                        </div>
+
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </div>
-          <p className="text-gray-600 mt-1">{data.session.periode}</p>
         </div>
-      </div>
 
-      {feedback && (
-        <div
-          className={`rounded-lg border px-4 py-3 ${
-            feedback.type === 'success'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-              : 'border-red-200 bg-red-50 text-red-700'
-          }`}
-        >
-          {feedback.message}
-        </div>
-      )}
+        <Separator className="bg-slate-200 my-8" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Informations session</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs uppercase text-muted-foreground">Classe</p>
-              <p className="font-medium">{data.session.classe || 'Non renseignée'}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase text-muted-foreground">Spécialité</p>
-              <p className="font-medium">{data.session.specialite || 'Non renseignée'}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase text-muted-foreground">Promotion</p>
-              <p className="font-medium">{data.session.promotion || 'Non renseignée'}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase text-muted-foreground">Niveau</p>
-              <p className="font-medium">{data.session.niveau || 'Non renseigné'}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Paramètres système</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span>Prix horaire formateur</span>
-              <span className="font-semibold">
-                {formatAmount(systemParameters?.prixHeureFormation)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>Montant coordination</span>
-              <span className="font-semibold">
-                {formatAmount(systemParameters?.prixCoordinationFixe)}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>TVA appliquée</span>
-              <span className="font-semibold">{systemParameters?.tva}%</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
-              Fiches des formateurs
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Renseignez les heures tutorat et regroupement pour chaque formateur.
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {data.formateurs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              Aucun formateur assigné à cette session.
-            </p>
-          ) : (
-            data.formateurs.map((formateur) => {
-              const preview = computePreview(formateur.id);
-              return (
-                <div
-                  key={formateur.id}
-                  className="border rounded-lg p-4 space-y-4 shadow-sm"
-                >
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        {/* --- Coordinateur & Règlement (Bottom Section) --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* Card Coordinateur */}
+          <Card className="border-slate-200 shadow-sm h-full">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-3">
+              <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                <ClipboardCheck className="h-5 w-5 text-emerald-600" />
+                Coordinateur
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              {data.coordinateur ? (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-semibold">{formateur.name}</p>
-                      <p className="text-sm text-muted-foreground">{formateur.email}</p>
-                      <p className="text-xs text-muted-foreground">
-                        CIN: {formateur.cin || '—'} • RIB: {formateur.rib || '—'}
-                      </p>
+                      <p className="font-bold text-slate-900 text-lg">{data.coordinateur.name}</p>
+                      <p className="text-sm text-slate-500">{data.coordinateur.email}</p>
                     </div>
-                    <Badge
-                      variant={formateur.fiche ? 'default' : 'secondary'}
-                      className={
-                        formateur.fiche
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }
-                    >
-                      {formateur.fiche ? 'Fiche enregistrée' : 'En attente'}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    <div>
-                      <p className="text-xs uppercase text-muted-foreground mb-1">
-                        Total regroupement
-                      </p>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.25"
-                        value={formateurValues[formateur.id]?.totalRegroupement ?? ''}
-                        onChange={(e) =>
-                          handleFormateurChange(formateur.id, 'totalRegroupement', e.target.value)
-                        }
-                      />
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase text-muted-foreground mb-1">
-                        Total tutorat
-                      </p>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.25"
-                        value={formateurValues[formateur.id]?.totalTutorat ?? ''}
-                        onChange={(e) =>
-                          handleFormateurChange(formateur.id, 'totalTutorat', e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="rounded-lg bg-slate-50 p-3 text-sm">
-                      <p className="text-xs uppercase text-muted-foreground">Heures totales</p>
-                      <p className="font-semibold">{preview.heures.toFixed(2)}</p>
-                    </div>
-                    <div className="rounded-lg bg-slate-50 p-3 text-sm space-y-1">
-                      <p className="text-xs uppercase text-muted-foreground">Montant brut</p>
-                      <p className="font-semibold">{formatAmount(preview.montantBrut)}</p>
-                      <p className="text-xs uppercase text-muted-foreground">Montant net</p>
-                      <p className="font-semibold">{formatAmount(preview.montantNet)}</p>
+                    <div className="text-right text-xs text-slate-400">
+                      <p>RIB: {data.coordinateur.rib || '—'}</p>
+                      <p>{data.coordinateur.banque || 'Banque inconnue'}</p>
                     </div>
                   </div>
 
-                  {formateur.fiche && (
-                    <div className="text-xs text-muted-foreground">
-                      Dernière mise à jour :{' '}
-                      {new Date(formateur.fiche.updatedAt).toLocaleString('fr-FR')}
-                      {' • '}
-                      Mémoire n° {formateur.fiche.numMemoire}
+                  <div className="bg-indigo-50/50 rounded-lg p-4 border border-indigo-100 space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                       <span className="text-slate-500">Montant Brut </span>
+                       <span className="font-medium text-slate-700">{formatAmount(coordinateurFiche?.montantBrut || systemParameters?.prixCoordinationFixe)}</span>
                     </div>
-                  )}
+                    <Separator className="bg-indigo-100" />
+                    <div className="flex justify-between items-center">
+                       <span className="text-emerald-700 font-bold uppercase text-xs">Net Coordination</span>
+                       <span className="font-bold text-xl text-emerald-700">
+                          {coordinateurFiche
+                            ? formatAmount(coordinateurFiche.montantNet)
+                            : formatAmount((systemParameters?.prixCoordinationFixe || 0) * (1 - (systemParameters?.tva || 0) / 100))
+                          }
+                       </span>
+                    </div>
+                  </div>
 
-                  <div className="flex flex-col gap-2 md:flex-row md:justify-end">
+                  <div className="flex gap-3 pt-2">
                     <Button
                       variant="outline"
-                      disabled={!formateur.fiche || downloadKey === `formation-${formateur.id}`}
-                      onClick={() =>
-                        downloadPdf({
-                          key: `formation-${formateur.id}`,
-                          filename: `memoire-formation-${data.session.id}-${formateur.id}.pdf`,
-                          payload: {
-                            sessionId: data.session.id,
-                            type: 'FORMATION',
-                            formateurId: formateur.id,
-                          },
-                        })
-                      }
+                      className="flex-1 border-slate-200 text-slate-600"
+                      disabled={!coordinateurFiche || downloadKey === 'coordination'}
+                      onClick={() => downloadPdf({ key: 'coordination', filename: 'fiche_coordination.pdf', payload: { sessionId: data.session.id, type: 'COORDINATION' } })}
                     >
-                      {downloadKey === `formation-${formateur.id}` && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Exporter PDF
+                      {downloadKey === 'coordination' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      <FileText className="mr-2 h-4 w-4" /> PDF
                     </Button>
                     <Button
-                      onClick={() => handleFormateurSubmit(formateur.id)}
-                      disabled={pendingActionId === formateur.id}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={handleCoordinateurSubmit}
+                      disabled={pendingActionId === 'COORDINATION'}
                     >
-                      {pendingActionId === formateur.id && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Enregistrer la fiche
+                      {pendingActionId === 'COORDINATION' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {coordinateurFiche ? 'Mettre à jour' : 'Valider fiche'}
                     </Button>
                   </div>
                 </div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
+              ) : (
+                 <div className="text-center py-10 text-slate-400">
+                    <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <p>Aucun coordinateur assigné.</p>
+                 </div>
+              )}
+            </CardContent>
+          </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardCheck className="h-5 w-5 text-primary" />
-              Fiche coordinateur
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {data.coordinateur ? (
-              <>
-                <div>
-                  <p className="text-sm font-semibold">{data.coordinateur.name}</p>
-                  <p className="text-sm text-muted-foreground">{data.coordinateur.email}</p>
-                  <p className="text-xs text-muted-foreground">
-                    RIB: {data.coordinateur.rib || '—'} • Banque:{' '}
-                    {data.coordinateur.banque || '—'}
-                  </p>
+          {/* Card Règlement (Summary) */}
+          <Card className="border-slate-200 shadow-lg ring-1 ring-slate-100 relative overflow-hidden bg-white">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500"></div>
+            <CardHeader className="bg-slate-50/30 border-b border-slate-100 pb-3">
+              <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                Mémoire de Règlement
+              </CardTitle>
+              <CardDescription>Synthèse globale de la session</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                  <span className="text-slate-500 text-sm">Total Formateurs (Net)</span>
+                  <span className="font-semibold text-slate-700">{formatAmount(data.summary.totalFormateursNet)}</span>
                 </div>
-                <div className="rounded-lg bg-slate-50 p-3 text-sm space-y-1">
-                  <p className="text-xs uppercase text-muted-foreground">Montant brut</p>
-                  <p className="font-semibold">
-                    {formatAmount(coordinateurFiche?.montantBrut || systemParameters?.prixCoordinationFixe)}
-                  </p>
-                  <p className="text-xs uppercase text-muted-foreground">Montant net</p>
-                  <p className="font-semibold">
-                    {coordinateurFiche
-                      ? formatAmount(coordinateurFiche.montantNet)
-                      : formatAmount(
-                          (systemParameters?.prixCoordinationFixe || 0) -
-                            ((systemParameters?.prixCoordinationFixe || 0) * (systemParameters?.tva || 0) / 100)
-                        )}
-                  </p>
+                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                   <span className="text-slate-500 text-sm">Coordination (Net)</span>
+                   <span className="font-semibold text-slate-700">{formatAmount(data.summary.totalCoordinateurNet)}</span>
                 </div>
-                {coordinateurFiche && (
-                  <p className="text-xs text-muted-foreground">
-                    Mémoire n° {coordinateurFiche.numMemoire} — mis à jour le{' '}
-                    {new Date(coordinateurFiche.updatedAt).toLocaleString('fr-FR')}
-                  </p>
-                )}
-                <div className="flex flex-col gap-2 sm:flex-row sm:justify-start">
-                  <Button
-                    variant="outline"
-                    disabled={!coordinateurFiche || downloadKey === 'coordination'}
-                    onClick={() =>
-                      downloadPdf({
-                        key: 'coordination',
-                        filename: `memoire-coordination-${data.session.id}.pdf`,
-                        payload: {
-                          sessionId: data.session.id,
-                          type: 'COORDINATION',
-                        },
-                      })
-                    }
-                  >
-                    {downloadKey === 'coordination' && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Exporter PDF
-                  </Button>
-                  <Button
-                    onClick={handleCoordinateurSubmit}
-                    disabled={pendingActionId === 'COORDINATION'}
-                  >
-                    {pendingActionId === 'COORDINATION' && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {coordinateurFiche ? 'Mettre à jour la fiche' : 'Créer la fiche coordinateur'}
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Aucun coordinateur n’est assigné à cette session.
-              </p>
-            )}
-          </CardContent>
-        </Card>
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-              Mémoire de règlement
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-lg bg-slate-50 p-3 text-sm space-y-1">
-              <div className="flex justify-between">
-                <span>Total formateurs (net)</span>
-                <span className="font-semibold">
-                  {formatAmount(data.summary.totalFormateursNet)}
-                </span>
+              <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 flex flex-col items-center justify-center text-center">
+                 <span className="text-emerald-600 uppercase text-xs font-bold tracking-widest mb-1">Total Net à payer</span>
+                 <span className="text-3xl font-extrabold text-emerald-700">{formatAmount(data.summary.totalNet)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Total coordination (net)</span>
-                <span className="font-semibold">
-                  {formatAmount(data.summary.totalCoordinateurNet)}
-                </span>
+
+              {reglementFiche && (
+                <p className="text-xs text-center text-slate-400">
+                  Fiche généré le {new Date(reglementFiche.updatedAt).toLocaleDateString()}
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-slate-200 text-slate-600"
+                  disabled={!reglementFiche || downloadKey === 'reglement'}
+                  onClick={() => downloadPdf({ key: 'reglement', filename: `memoire_reglement_${data.session.id}.pdf`, payload: { sessionId: data.session.id, type: 'REGLEMENT' } })}
+                >
+                   {downloadKey === 'reglement' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                   Exporter
+                </Button>
+                <Button
+                  className={`flex-1 ${reglementFiche ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  onClick={handleReglementSubmit}
+                  disabled={pendingActionId === 'REGLEMENT' || data.summary.totalNet === 0}
+                >
+                  {pendingActionId === 'REGLEMENT' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {reglementFiche ? 'Régénérer Mémoire' : 'Générer Mémoire'}
+                </Button>
               </div>
-              <div className="flex justify-between text-base font-semibold">
-                <span>Total net</span>
-                <span>{formatAmount(data.summary.totalNet)}</span>
-              </div>
-            </div>
-            {reglementFiche && (
-              <p className="text-xs text-muted-foreground">
-                Mémoire n° {reglementFiche.numMemoire} — généré le{' '}
-                {new Date(reglementFiche.updatedAt).toLocaleString('fr-FR')}
-              </p>
-            )}
-            <div className="flex flex-col gap-2 sm:flex-row sm:justify-start">
-              <Button
-                variant="outline"
-                disabled={!reglementFiche || downloadKey === 'reglement'}
-                onClick={() =>
-                  downloadPdf({
-                    key: 'reglement',
-                    filename: `memoire-reglement-${data.session.id}.pdf`,
-                    payload: {
-                      sessionId: data.session.id,
-                      type: 'REGLEMENT',
-                    },
-                  })
-                }
-              >
-                {downloadKey === 'reglement' && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Exporter PDF
-              </Button>
-              <Button
-                onClick={handleReglementSubmit}
-                disabled={pendingActionId === 'REGLEMENT' || data.summary.totalNet === 0}
-              >
-                {pendingActionId === 'REGLEMENT' && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {reglementFiche ? 'Mettre à jour le mémoire' : 'Générer le mémoire'}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+        </div>
       </div>
     </div>
   );
 }
-
