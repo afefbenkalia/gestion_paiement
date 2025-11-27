@@ -26,6 +26,9 @@ export async function GET(request, { params }) {
         role: true,
         status: true,
         cv: true,
+        tel: true,
+        rib: true,
+        banque: true,
         createdAt: true,
       },
     });

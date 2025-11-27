@@ -149,7 +149,7 @@ export default function CoordinateurDetailPage() {
             </div>
 
             <Link
-              href={`/responsable/coordinateurs/${params.id}/edit`}
+              href={`/responsable/coordinateurs/${params.id}/profile`}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition"
             >
               <Edit className="w-4 h-4" />
