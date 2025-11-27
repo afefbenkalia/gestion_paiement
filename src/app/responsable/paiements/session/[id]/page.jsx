@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -22,7 +23,9 @@ import {
   Calculator,
   CheckCircle2,
   AlertCircle,
-  Banknote
+  Banknote,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react';
 
 const currencyFormatter = new Intl.NumberFormat('fr-TN', {
@@ -45,6 +48,10 @@ export default function SessionPaiementPage() {
   const [formateurValues, setFormateurValues] = useState({});
   const [pendingActionId, setPendingActionId] = useState(null);
   const [downloadKey, setDownloadKey] = useState(null);
+  const [archiving, setArchiving] = useState(false);
+  const [confirmArchiveOpen, setConfirmArchiveOpen] = useState(false);
+  const [confirmUnarchiveOpen, setConfirmUnarchiveOpen] = useState(false);
+  const [confirmReglementOpen, setConfirmReglementOpen] = useState(false);
 
   const systemParameters = data?.systemParameters;
 
@@ -147,7 +154,7 @@ export default function SessionPaiementPage() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error(err);
-      setFeedback({ type: 'error', message: err.message || 'Erreur lors de l’export PDF.' });
+      setFeedback({ type: 'error', message: err.message || 'Erreur lors de l\'export PDF.' });
     } finally {
       setDownloadKey(null);
     }
@@ -174,6 +181,74 @@ export default function SessionPaiementPage() {
     runAction({ type: 'REGLEMENT' }, 'Mémoire de règlement généré avec succès.');
   };
 
+  const handleArchiveFiche = async () => {
+    try {
+      setArchiving(true);
+      setFeedback(null);
+      
+      const res = await fetch('/api/responsable/fiche/cloture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: Number(sessionId) }),
+      });
+
+      const response = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(response.error || 'Impossible de clôturer les fiches.');
+      }
+
+      setFeedback({ type: 'success', message: response.message || 'Toutes les fiches ont été clôturées et archivées.' });
+      
+      // Reload data to reflect the change
+      const reloadRes = await fetch(`/api/responsable/paiment/${sessionId}`, { cache: 'no-store' });
+      const payload = await reloadRes.json();
+      if (reloadRes.ok) {
+        setData(payload);
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({ type: 'error', message: err.message || 'Erreur lors de la clôture.' });
+    } finally {
+      setArchiving(false);
+      setConfirmArchiveOpen(false);
+    }
+  };
+
+  const handleUnarchiveFiche = async () => {
+    try {
+      setArchiving(true);
+      setFeedback(null);
+      
+      const res = await fetch('/api/responsable/fiche/cloture', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: Number(sessionId) }),
+      });
+
+      const response = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(response.error || 'Impossible de réouvrir les fiches.');
+      }
+
+      setFeedback({ type: 'success', message: response.message || 'Toutes les fiches ont été réouvertes.' });
+      
+      // Reload data
+      const reloadRes = await fetch(`/api/responsable/paiment/${sessionId}`, { cache: 'no-store' });
+      const payload = await reloadRes.json();
+      if (reloadRes.ok) {
+        setData(payload);
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedback({ type: 'error', message: err.message || 'Erreur lors de la réouverture.' });
+    } finally {
+      setArchiving(false);
+      setConfirmUnarchiveOpen(false);
+    }
+  };
+
   const computePreview = (formateurId) => {
     if (!systemParameters) return { heures: 0, brut: 0, net: 0 };
     const values = formateurValues[formateurId] || {};
@@ -187,6 +262,9 @@ export default function SessionPaiementPage() {
 
   const coordinateurFiche = data?.fiches?.coordinateur;
   const reglementFiche = data?.fiches?.reglement;
+  const isSessionCloturee = reglementFiche?.cloture || false;
+  const isFicheCoordinateurCloturee = coordinateurFiche?.cloture || false;
+  const isFicheReglementCloturee = reglementFiche?.cloture || false;
 
   if (!sessionId) return <div className="p-8 text-red-600">Identifiant de session manquant.</div>;
 
@@ -245,15 +323,50 @@ export default function SessionPaiementPage() {
                 <p className="text-slate-500 text-sm">{data.session.periode}</p>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs md:text-sm text-slate-600">
-              <Banknote className="w-4 h-4 text-blue-600" />
-              <span>Prix Heure: <strong>{formatAmount(systemParameters?.prixHeureFormation)}/h</strong></span>
-              <Separator orientation="vertical" className="h-4 bg-slate-300" />
-              <span>TVA: <strong>{systemParameters?.tva}%</strong></span>
-
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs md:text-sm text-slate-600">
+                <Banknote className="w-4 h-4 text-blue-600" />
+                <span>Prix Heure: <strong>{formatAmount(systemParameters?.prixHeureFormation)}/h</strong></span>
+                <Separator orientation="vertical" className="h-4 bg-slate-300" />
+                <span>TVA: <strong>{systemParameters?.tva}%</strong></span>
+              </div>
+              {reglementFiche && (
+                reglementFiche.cloture ? (
+                  <Button
+                    variant="outline"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                    onClick={() => setConfirmUnarchiveOpen(true)}
+                    disabled={archiving}
+                    title="Réouvrir toutes les fiches"
+                  >
+                    <ArchiveRestore className="mr-2 h-4 w-4" />
+                    Réouvrir
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-slate-400"
+                    onClick={() => setConfirmArchiveOpen(true)}
+                    disabled={archiving}
+                    title="Clôturer et archiver toutes les fiches"
+                  >
+                    <Archive className="mr-2 h-4 w-4" />
+                    Clôturer et archiver
+                  </Button>
+                )
+              )}
             </div>
           </div>
+
+          {/* Message d'information pour session clôturée */}
+          {isSessionCloturee && (
+            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <p className="text-amber-700 text-sm flex items-center gap-2">
+                <Archive className="h-4 w-4" />
+                <span>Cette session est clôturée. Les modifications sont désactivées.</span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -272,171 +385,208 @@ export default function SessionPaiementPage() {
         )}
 
         {/* --- Info Grid --- */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="md:col-span-4 bg-white border-slate-200 shadow-sm">
-            <CardContent className="p-4 md:p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Classe", value: data.session.classe },
-                { label: "Spécialité", value: data.session.specialite },
-                { label: "Promotion", value: data.session.promotion },
-                { label: "Niveau", value: data.session.niveau }
-              ].map((item, idx) => (
-                <div key={idx} className="space-y-1">
-                  <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{item.label}</p>
-                  <p className="text-slate-900 font-medium truncate" title={item.value || '-'}>{item.value || '—'}</p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="md:col-span-4 bg-white border-slate-200 shadow-sm">
+              <CardContent className="p-4 md:p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+            { label: "Classe", value: data.session.classe },
+            { label: "Spécialité", value: data.session.specialite },
+            { label: "Promotion", value: data.session.promotion },
+            { label: "Niveau", value: data.session.niveau }
+                ].map((item, idx) => (
+            <div key={idx} className="space-y-1">
+              <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">{item.label}</p>
+              <p className="text-slate-900 font-medium truncate" title={item.value || '-'}>{item.value || '—'}</p>
+            </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* --- Formateurs Section --- */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                Fiches Formateurs
+              </h2>
+              <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+                {data.formateurs.length} intervenant(s)
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {data.formateurs.length === 0 ? (
+                <Card className="border-dashed border-slate-300 bg-slate-50/50 p-8 text-center text-slate-500">
+            <Users className="h-10 w-10 mx-auto mb-2 text-slate-300" />
+            <p>Aucun formateur assigné à cette session.</p>
+                </Card>
+              ) : (
+                data.formateurs.map((formateur) => {
+            const preview = computePreview(formateur.id);
+            const isSaved = !!formateur.fiche;
+            const isFicheFormateurCloturee = formateur.fiche?.cloture || false;
+            
+            return (
+              <Card 
+                key={formateur.id} 
+                className={`transition-all duration-200 border-slate-200 shadow-sm hover:shadow-md relative ${isSaved ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-amber-400'}`}
+              >
+                {(isFicheFormateurCloturee || isSessionCloturee) && (
+                  <div className="absolute top-2 right-2 z-10">
+              <Badge className="bg-slate-600 text-white border-slate-700">
+                <Archive className="w-3 h-3 mr-1" /> Archivée
+              </Badge>
+                  </div>
+                )}
+                <CardContent className="p-5">
+                  <div className="flex flex-col lg:flex-row gap-6">
+              
+              {/* Info Identité */}
+              <div className="lg:w-1/4 space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-slate-900">{formateur.name}</h3>
+                  {isSaved && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+                <p className="text-sm text-slate-500 truncate">{formateur.email}</p>
+                <div className="text-xs text-slate-400 mt-2 space-y-1">
+                  <p>CIN: <span className="font-mono text-slate-600">{formateur.cin || '—'}</span></p>
+                  <p>RIB: <span className="font-mono text-slate-600">{formateur.rib || '—'}</span></p>
+                </div>
+              </div>
 
-        {/* --- Formateurs Section --- */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              Fiches Formateurs
-            </h2>
-            <Badge variant="secondary" className="bg-slate-100 text-slate-600">
-              {data.formateurs.length} intervenant(s)
-            </Badge>
-          </div>
+              {/* Inputs Heures */}
+              <div className="lg:w-1/3 grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-600 uppercase">Tutorat (H)</label>
+                  <div className="relative">
+                    <Input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                readOnly={isFicheFormateurCloturee || isSessionCloturee}
+                className={`border-slate-200 pr-8 font-mono transition-colors ${
+                  isFicheFormateurCloturee || isSessionCloturee
+                    ? 'bg-slate-100 cursor-not-allowed text-slate-500' 
+                    : 'bg-slate-50 focus:bg-white focus:border-blue-500'
+                }`}
+                value={formateurValues[formateur.id]?.totalTutorat ?? ''}
+                onChange={(e) => handleFormateurChange(formateur.id, 'totalTutorat', e.target.value)}
+                    />
+                    <span className="absolute right-3 top-2 text-xs text-slate-400">h</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-slate-600 uppercase">Regroup (H)</label>
+                  <div className="relative">
+                    <Input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                readOnly={isFicheFormateurCloturee || isSessionCloturee}
+                className={`border-slate-200 pr-8 font-mono transition-colors ${
+                  isFicheFormateurCloturee || isSessionCloturee
+                    ? 'bg-slate-100 cursor-not-allowed text-slate-500' 
+                    : 'bg-slate-50 focus:bg-white focus:border-blue-500'
+                }`}
+                value={formateurValues[formateur.id]?.totalRegroupement ?? ''}
+                onChange={(e) => handleFormateurChange(formateur.id, 'totalRegroupement', e.target.value)}
+                    />
+                    <span className="absolute right-3 top-2 text-xs text-slate-400">h</span>
+                  </div>
+                </div>
+                <div className="col-span-2 flex justify-between items-center bg-slate-100 rounded px-2 py-1">
+                   <span className="text-xs text-slate-500">Total Heures</span>
+                   <span className="text-sm font-bold text-slate-700 font-mono">{preview.heures} h</span>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            {data.formateurs.length === 0 ? (
-              <Card className="border-dashed border-slate-300 bg-slate-50/50 p-8 text-center text-slate-500">
-                <Users className="h-10 w-10 mx-auto mb-2 text-slate-300" />
-                <p>Aucun formateur assigné à cette session.</p>
+              {/* Calcul & Actions */}
+              <div className="lg:flex-1 flex flex-col justify-between gap-4">
+                 {/* Boite Financière */}
+                 <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-100 flex justify-between items-center">
+                    <div>
+                <p className="text-xs text-slate-500 uppercase mb-1">Montant Brut</p>
+                <p className="text-sm font-medium text-slate-700">{formatAmount(preview.montantBrut)}</p>
+                    </div>
+                    <Separator orientation="vertical" className="h-8 bg-blue-200" />
+                    <div className="text-right">
+                <p className="text-xs text-emerald-600 font-bold uppercase mb-1">Net à payer</p>
+                <p className="text-lg font-bold text-emerald-700">{formatAmount(preview.montantNet)}</p>
+                    </div>
+                 </div>
+
+                 <div className="flex justify-end gap-2">
+                    <Button
+                size="sm"
+                variant="outline"
+                className="border-slate-200 text-slate-600 hover:text-blue-600 hover:bg-white"
+                disabled={!isSaved || downloadKey === `formation-${formateur.id}`}
+                onClick={() =>
+                  downloadPdf({
+                    key: `formation-${formateur.id}`,
+                    filename: `fiche-${formateur.name.replace(/\s+/g, '_')}.pdf`,
+                    payload: { sessionId: data.session.id, type: 'FORMATION', formateurId: formateur.id },
+                  })
+                }
+                    >
+                {downloadKey === `formation-${formateur.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+                PDF
+                    </Button>
+                    
+                    {/* CORRECTION : Bouton caché quand session clôturée */}
+                    {!isSessionCloturee && !isFicheFormateurCloturee && (
+                <Button
+                  size="sm"
+                  onClick={() => handleFormateurSubmit(formateur.id)}
+                  disabled={pendingActionId === formateur.id}
+                  className={isSaved ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"}
+                >
+                  {pendingActionId === formateur.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (isSaved ? <Save className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />)}
+                  {isSaved ? 'Mettre à jour' : 'Enregistrer'}
+                </Button>
+                    )}
+                    
+                    {/* Badge visible quand clôturé */}
+                    {(isFicheFormateurCloturee || isSessionCloturee) && (
+                <Badge className="bg-slate-600 text-white px-4 py-2">
+                  <Archive className="h-3 w-3 mr-1" />
+                  {isSessionCloturee ? 'Session clôturée' : 'Fiche clôturée'}
+                </Badge>
+                    )}
+                 </div>
+              </div>
+
+                  </div>
+                </CardContent>
               </Card>
-            ) : (
-              data.formateurs.map((formateur) => {
-                const preview = computePreview(formateur.id);
-                const isSaved = !!formateur.fiche;
-                
-                return (
-                  <Card 
-                    key={formateur.id} 
-                    className={`transition-all duration-200 border-slate-200 shadow-sm hover:shadow-md ${isSaved ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-amber-400'}`}
-                  >
-                    <CardContent className="p-5">
-                      <div className="flex flex-col lg:flex-row gap-6">
-                        
-                        {/* Info Identité */}
-                        <div className="lg:w-1/4 space-y-1">
-                          <div className="flex items-center gap-2">
-                             <h3 className="font-bold text-slate-900">{formateur.name}</h3>
-                             {isSaved && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-                          </div>
-                          <p className="text-sm text-slate-500 truncate">{formateur.email}</p>
-                          <div className="text-xs text-slate-400 mt-2 space-y-1">
-                             <p>CIN: <span className="font-mono text-slate-600">{formateur.cin || '—'}</span></p>
-                             <p>RIB: <span className="font-mono text-slate-600">{formateur.rib || '—'}</span></p>
-                          </div>
-                        </div>
-
-                        {/* Inputs Heures */}
-                        <div className="lg:w-1/3 grid grid-cols-2 gap-4">
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-slate-600 uppercase">Tutorat (H)</label>
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="1"
-                                placeholder="0"
-                                className="bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 transition-colors pr-8 font-mono"
-                                value={formateurValues[formateur.id]?.totalTutorat ?? ''}
-                                onChange={(e) => handleFormateurChange(formateur.id, 'totalTutorat', e.target.value)}
-                              />
-                              <span className="absolute right-3 top-2 text-xs text-slate-400">h</span>
-                            </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-slate-600 uppercase">Regroup (H)</label>
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                step="1"
-                                placeholder="0"
-                                className="bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 transition-colors pr-8 font-mono"
-                                value={formateurValues[formateur.id]?.totalRegroupement ?? ''}
-                                onChange={(e) => handleFormateurChange(formateur.id, 'totalRegroupement', e.target.value)}
-                              />
-                              <span className="absolute right-3 top-2 text-xs text-slate-400">h</span>
-                            </div>
-                          </div>
-                          <div className="col-span-2 flex justify-between items-center bg-slate-100 rounded px-2 py-1">
-                             <span className="text-xs text-slate-500">Total Heures</span>
-                             <span className="text-sm font-bold text-slate-700 font-mono">{preview.heures} h</span>
-                          </div>
-                        </div>
-
-                        {/* Calcul & Actions */}
-                        <div className="lg:flex-1 flex flex-col justify-between gap-4">
-                           {/* Boite Financière */}
-                           <div className="bg-blue-50/50 rounded-lg p-3 border border-blue-100 flex justify-between items-center">
-                              <div>
-                                <p className="text-xs text-slate-500 uppercase mb-1">Montant Brut</p>
-                                <p className="text-sm font-medium text-slate-700">{formatAmount(preview.montantBrut)}</p>
-                              </div>
-                              <Separator orientation="vertical" className="h-8 bg-blue-200" />
-                              <div className="text-right">
-                                <p className="text-xs text-emerald-600 font-bold uppercase mb-1">Net à payer</p>
-                                <p className="text-lg font-bold text-emerald-700">{formatAmount(preview.montantNet)}</p>
-                              </div>
-                           </div>
-
-                           <div className="flex justify-end gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="border-slate-200 text-slate-600 hover:text-blue-600 hover:bg-white"
-                                disabled={!isSaved || downloadKey === `formation-${formateur.id}`}
-                                onClick={() =>
-                                  downloadPdf({
-                                    key: `formation-${formateur.id}`,
-                                    filename: `fiche-${formateur.name.replace(/\s+/g, '_')}.pdf`,
-                                    payload: { sessionId: data.session.id, type: 'FORMATION', formateurId: formateur.id },
-                                  })
-                                }
-                              >
-                                {downloadKey === `formation-${formateur.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
-                                PDF
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleFormateurSubmit(formateur.id)}
-                                disabled={pendingActionId === formateur.id}
-                                className={isSaved ? "bg-blue-600 hover:bg-blue-700" : "bg-blue-600 hover:bg-blue-700"}
-                              >
-                                {pendingActionId === formateur.id ? <Loader2 className="h-4 w-4 animate-spin" /> : (isSaved ? <Save className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />)}
-                                {isSaved ? 'Mettre à jour' : 'Enregistrer'}
-                              </Button>
-                           </div>
-                        </div>
-
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
+            );
+                })
+              )}
+            </div>
           </div>
-        </div>
 
-        <Separator className="bg-slate-200 my-8" />
+          <Separator className="bg-slate-200 my-8" />
 
-        {/* --- Coordinateur & Règlement (Bottom Section) --- */}
+          {/* --- Coordinateur & Règlement (Bottom Section) --- */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Card Coordinateur */}
           <Card className="border-slate-200 shadow-sm h-full">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-3">
-              <CardTitle className="flex items-center gap-2 text-base text-slate-800">
-                <ClipboardCheck className="h-5 w-5 text-emerald-600" />
-                Coordinateur
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                  <ClipboardCheck className="h-5 w-5 text-emerald-600" />
+                  Coordinateur
+                </CardTitle>
+                {isFicheCoordinateurCloturee && (
+                  <Badge className="bg-slate-600 text-white border-slate-700">
+                    <Archive className="h-3 w-3 mr-1" /> Archivée
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="p-6">
               {data.coordinateur ? (
@@ -479,14 +629,26 @@ export default function SessionPaiementPage() {
                       {downloadKey === 'coordination' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       <FileText className="mr-2 h-4 w-4" /> PDF
                     </Button>
-                    <Button
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={handleCoordinateurSubmit}
-                      disabled={pendingActionId === 'COORDINATION'}
-                    >
-                      {pendingActionId === 'COORDINATION' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {coordinateurFiche ? 'Mettre à jour' : 'Valider fiche'}
-                    </Button>
+                    
+                    {/* CORRECTION : Bouton caché quand session clôturée */}
+                    {!isSessionCloturee && !isFicheCoordinateurCloturee && (
+                      <Button
+                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={handleCoordinateurSubmit}
+                        disabled={pendingActionId === 'COORDINATION'}
+                      >
+                        {pendingActionId === 'COORDINATION' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {coordinateurFiche ? 'Mettre à jour' : 'Valider fiche'}
+                      </Button>
+                    )}
+                    
+                    {/* Badge visible quand clôturé */}
+                    {(isFicheCoordinateurCloturee || isSessionCloturee) && (
+                      <Badge className="flex-1 bg-slate-600 text-white px-4 py-2 justify-center">
+                        <Archive className="h-3 w-3 mr-1" />
+                        {isSessionCloturee ? 'Session clôturée' : 'Fiche clôturée'}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -500,13 +662,26 @@ export default function SessionPaiementPage() {
 
           {/* Card Règlement (Summary) */}
           <Card className="border-slate-200 shadow-lg ring-1 ring-slate-100 relative overflow-hidden bg-white">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500"></div>
+            {/* Corner overlay badge when session/fiche reglement is archived */}
+            {reglementFiche && reglementFiche.cloture && (
+              <div className="absolute top-2 right-2 z-10">
+                <Badge className="bg-slate-600 text-white border-slate-700">
+                  <Archive className="h-3 w-3 mr-1" />
+                  Archivée
+                </Badge>
+              </div>
+            )}
+            <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-blue-500 to-emerald-500"></div>
             <CardHeader className="bg-slate-50/30 border-b border-slate-100 pb-3">
-              <CardTitle className="flex items-center gap-2 text-base text-slate-800">
-                <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                Mémoire de Règlement
-              </CardTitle>
-              <CardDescription>Synthèse globale de la session</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base text-slate-800">
+                    <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                    Mémoire de Règlement
+                  </CardTitle>
+                  <CardDescription>Synthèse globale de la session</CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-3">
@@ -541,17 +716,87 @@ export default function SessionPaiementPage() {
                    {downloadKey === 'reglement' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                    Exporter
                 </Button>
-                <Button
-                  className={`flex-1 ${reglementFiche ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'}`}
-                  onClick={handleReglementSubmit}
-                  disabled={pendingActionId === 'REGLEMENT' || data.summary.totalNet === 0}
-                >
-                  {pendingActionId === 'REGLEMENT' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {reglementFiche ? 'Régénérer Mémoire' : 'Générer Mémoire'}
-                </Button>
+                
+                {/* CORRECTION : Bouton caché quand session clôturée */}
+                {!isSessionCloturee && !isFicheReglementCloturee && (
+                  <Button
+                    className={`flex-1 ${reglementFiche ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                    onClick={() => setConfirmReglementOpen(true)}
+                    disabled={pendingActionId === 'REGLEMENT' || data.summary.totalNet === 0}
+                  >
+                    {pendingActionId === 'REGLEMENT' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {reglementFiche ? 'Régénérer Mémoire' : 'Générer Mémoire'}
+                  </Button>
+                )}
+                
+                {/* Badge visible quand clôturé */}
+                {isSessionCloturee && (
+                  <Badge className="flex-1 bg-slate-600 text-white px-4 py-2 justify-center">
+                    <Archive className="h-3 w-3 mr-1" />
+                    Session clôturée
+                  </Badge>
+                )}
               </div>
+
+              {/* Archive/Unarchive controls moved to header */}
             </CardContent>
           </Card>
+
+          {/* Confirm dialogs */}
+          <Dialog open={confirmArchiveOpen} onOpenChange={setConfirmArchiveOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Clôturer et archiver la session</DialogTitle>
+                <DialogDescription>
+                  Cette action va clôturer toutes les fiches (formateurs, coordinateur et règlement).
+                  Vous ne pourrez plus modifier la session tant qu'elle est archivée.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setConfirmArchiveOpen(false)}>Annuler</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleArchiveFiche} disabled={archiving}>
+                  {archiving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Archive className="mr-2 h-4 w-4" />}
+                  Confirmer
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={confirmUnarchiveOpen} onOpenChange={setConfirmUnarchiveOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Réouvrir toutes les fiches</DialogTitle>
+                <DialogDescription>
+                  Cette action va réouvrir toutes les fiches de la session et permettre les modifications.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setConfirmUnarchiveOpen(false)}>Annuler</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleUnarchiveFiche} disabled={archiving}>
+                  {archiving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArchiveRestore className="mr-2 h-4 w-4" />}
+                  Confirmer
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={confirmReglementOpen} onOpenChange={setConfirmReglementOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{reglementFiche ? 'Régénérer le Mémoire' : 'Générer le Mémoire'}</DialogTitle>
+                <DialogDescription>
+                  Confirmez la génération du mémoire de règlement pour cette session.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setConfirmReglementOpen(false)}>Annuler</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleReglementSubmit} disabled={pendingActionId === 'REGLEMENT' || data.summary.totalNet === 0}>
+                  {pendingActionId === 'REGLEMENT' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Confirmer
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
         </div>
       </div>

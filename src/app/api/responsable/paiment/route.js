@@ -69,6 +69,7 @@ export async function GET() {
       coordinateur: item.coordinateur,
       summary: item.summary,
       ficheReglementId: item.fiches.reglement?.id ?? null,
+      reglementCloture: Boolean(item.fiches.reglement?.cloture),
       statut: item.fiches.reglement ? 'COMPLET' : 'EN ATTENTE',
     }));
 

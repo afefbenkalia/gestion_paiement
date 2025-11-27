@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -47,6 +48,9 @@ export default function PaiementsPage() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingParameters, setEditingParameters] = useState(false);
+  const [confirmSessionId, setConfirmSessionId] = useState(null);
+  const [confirmAction, setConfirmAction] = useState(null); // 'archive' | 'unarchive'
+  const [archiving, setArchiving] = useState(false);
 
   const tvaDisplay = formatPercent(systemParameters?.tva);
 
@@ -99,6 +103,33 @@ export default function PaiementsPage() {
   const handleCancelEdit = () => {
     setEditingParameters(false);
     fetchSessions();
+  };
+
+  const runArchiveAction = async () => {
+    if (!confirmSessionId || !confirmAction) return;
+    try {
+      setArchiving(true);
+      const res = await fetch('/api/responsable/fiche/cloture', {
+        method: confirmAction === 'archive' ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: Number(confirmSessionId) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Action impossible');
+      // Update local state instead of refetching whole list
+      setSessions((prev) => prev.map((s) => (
+        s.id === confirmSessionId
+          ? { ...s, reglementCloture: confirmAction === 'archive' }
+          : s
+      )));
+      setConfirmSessionId(null);
+      setConfirmAction(null);
+    } catch (e) {
+      console.error(e);
+      alert(e.message || 'Erreur lors de l\'action');
+    } finally {
+      setArchiving(false);
+    }
   };
 
   return (
@@ -276,7 +307,14 @@ export default function PaiementsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-6">
               {sessions.map((session) => (
-                <Card key={session.id} className="group border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white">
+                <Card key={session.id} className="group border-slate-200 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white relative">
+                  {session.reglementCloture && (
+                    <div className="absolute top-2 right-2 z-10">
+                      <Badge className="bg-slate-600 text-white border-slate-700">
+                        Archivée
+                      </Badge>
+                    </div>
+                  )}
                   <div className="flex flex-col lg:flex-row">
                     
                     {/* Colonne Gauche : Info Session */}
@@ -356,6 +394,28 @@ export default function PaiementsPage() {
                           Gérer les détails <ChevronRight className="ml-1 w-4 h-4" />
                         </Link>
                       </Button>
+
+                      <div className="mt-2">
+                        {session.reglementCloture ? (
+                          <Button
+                            variant="outline"
+                            className="w-full border-blue-300 text-blue-700 hover:bg-blue-50"
+                            onClick={() => { setConfirmSessionId(session.id); setConfirmAction('unarchive'); }}
+                            disabled={archiving}
+                          >
+                            Réouvrir les fiches
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            className="w-full border-slate-300 text-slate-700 hover:bg-slate-100 hover:border-slate-400"
+                            onClick={() => { setConfirmSessionId(session.id); setConfirmAction('archive'); }}
+                            disabled={archiving}
+                          >
+                            Clôturer et archiver
+                          </Button>
+                        )}
+                      </div>
                     </div>
 
                   </div>
@@ -363,7 +423,27 @@ export default function PaiementsPage() {
               ))}
             </div>
           )}
-        </div>
+            </div>
+
+            {/* Confirm archive/unarchive dialog */}
+            <Dialog open={!!confirmSessionId} onOpenChange={(open) => { if (!open) { setConfirmSessionId(null); setConfirmAction(null); } }}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{confirmAction === 'archive' ? 'Clôturer et archiver la session' : 'Réouvrir les fiches de la session'}</DialogTitle>
+                  <DialogDescription>
+                    {confirmAction === 'archive'
+                      ? 'Cette action va clôturer toutes les fiches (formateurs, coordinateur et règlement). Vous ne pourrez plus modifier la session tant qu\'elle est archivée.'
+                      : 'Cette action va réouvrir toutes les fiches de la session et permettre les modifications.'}
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => { setConfirmSessionId(null); setConfirmAction(null); }}>Annuler</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700" onClick={runArchiveAction} disabled={archiving}>
+                    {archiving ? 'Traitement…' : 'Confirmer'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
       </div>
     </div>
   );

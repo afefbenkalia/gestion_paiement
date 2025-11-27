@@ -79,6 +79,7 @@ function serializeFiche(fiche) {
     type: fiche.typeFiche,
     numMemoire: fiche.numMemoire,
     periode: fiche.periode,
+    cloture: Boolean(fiche.cloture),
     montantBrut: safeNumber(fiche.montantTotalBrut),
     montantNet: safeNumber(fiche.montantTotalNet),
     totalTutorat,

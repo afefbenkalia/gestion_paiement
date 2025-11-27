@@ -11,6 +11,7 @@ import {
   getSystemParameters,
   SESSION_PAIEMENT_INCLUDE,
 } from '@/lib/paiement';
+
 //src/app/api/responsable/paiment/[session]/route.js
 const normalizePositive = (value) => {
   const parsed = Number(value);
@@ -214,6 +215,42 @@ async function upsertReglementFiche({
   });
 }
 
+// Vérifier si une session est clôturée
+async function isSessionCloturee(sessionId) {
+  const reglementFiche = await prisma.ficheDePaie.findFirst({
+    where: {
+      sessionId,
+      typeFiche: 'REGLEMENT',
+      cloture: true,
+    },
+  });
+  
+  return !!reglementFiche;
+}
+
+// Vérifier si une fiche spécifique est clôturée
+async function isFicheCloturee({ sessionId, typeFiche, formateurId = null, coordinateurId = null }) {
+  const whereClause = {
+    sessionId,
+    typeFiche,
+    cloture: true,
+  };
+  
+  if (formateurId) {
+    whereClause.formateurId = formateurId;
+  }
+  
+  if (coordinateurId) {
+    whereClause.coordinateurId = coordinateurId;
+  }
+  
+  const fiche = await prisma.ficheDePaie.findFirst({
+    where: whereClause,
+  });
+  
+  return !!fiche;
+}
+
 // FIX: Add this function to handle params properly
 export async function GET(request, { params }) {
   try {
@@ -270,10 +307,56 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Type de fiche requis' }, { status: 400 });
     }
 
+    // Vérifier si la session est clôturée
+    const sessionCloturee = await isSessionCloturee(sessionId);
+    if (sessionCloturee) {
+      return NextResponse.json({ 
+        error: 'Impossible de modifier : cette session est clôturée et archivée.' 
+      }, { status: 400 });
+    }
+
     const sessionRecord = await fetchSession(sessionId);
 
     if (!sessionRecord) {
       return NextResponse.json({ error: 'Session non trouvée' }, { status: 404 });
+    }
+
+    // Vérifications supplémentaires de clôture selon le type
+    if (type === 'FORMATION') {
+      const formateurId = Number(body?.formateurId);
+      const ficheFormateurCloturee = await isFicheCloturee({
+        sessionId,
+        typeFiche: 'FORMATION',
+        formateurId
+      });
+      
+      if (ficheFormateurCloturee) {
+        return NextResponse.json({ 
+          error: 'Impossible de modifier : cette fiche formateur est clôturée.' 
+        }, { status: 400 });
+      }
+    } else if (type === 'COORDINATION') {
+      const ficheCoordinateurCloturee = await isFicheCloturee({
+        sessionId,
+        typeFiche: 'COORDINATION'
+      });
+      
+      if (ficheCoordinateurCloturee) {
+        return NextResponse.json({ 
+          error: 'Impossible de modifier : la fiche coordinateur est clôturée.' 
+        }, { status: 400 });
+      }
+    } else if (type === 'REGLEMENT') {
+      const ficheReglementCloturee = await isFicheCloturee({
+        sessionId,
+        typeFiche: 'REGLEMENT'
+      });
+      
+      if (ficheReglementCloturee) {
+        return NextResponse.json({ 
+          error: 'Impossible de modifier : le mémoire de règlement est clôturé.' 
+        }, { status: 400 });
+      }
     }
 
     const systemParameters = getSystemParameters();
