@@ -14,6 +14,8 @@ import {
   FileSpreadsheet,
   Settings,
   LogOut,
+  LayoutDashboard,
+  UserRoundPen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,9 +24,9 @@ export function ResponsableSidebar() {
 
   const menuItems = [
     {
-      title: 'Home',
-      href: '/',
-      icon: Home,
+      title: 'Dashboard',
+      href: '/dashboard/responsable',
+      icon: LayoutDashboard,
     },
     {
       section: 'GESTION',
@@ -84,19 +86,19 @@ export function ResponsableSidebar() {
     <div className="flex flex-col h-screen w-64 bg-gray-50 border-r border-gray-200">
       <div className="flex-1 overflow-y-auto py-6">
         <nav className="space-y-1 px-3">
-          {/* Home */}
-          <Link
-            href="/dashboard/responsable"
-            className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-              isActive('/dashboard/responsable')
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-100'
-            )}
-          >
-            <Home className="h-5 w-5" />
-            <span>Home</span>
-          </Link>
+              {/* Home */}
+              <Link
+                href="/dashboard/responsable"
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  isActive('/dashboard/responsable')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                )}
+              >
+                <LayoutDashboard className="h-5 w-5" />
+                <span>Dashboard</span>
+              </Link>
 
           {/* GESTION Section */}
           <div className="mt-6">
@@ -163,16 +165,16 @@ export function ResponsableSidebar() {
       {/* Bottom Actions */}
       <div className="border-t border-gray-200 p-4 space-y-1">
         <Link
-          href="/responsable/settings"
+          href="/responsable/profile"
           className={cn(
             'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-            isActive('/responsable/settings')
+            isActive('/responsable/profile')
               ? 'bg-blue-100 text-blue-700'
               : 'text-gray-700 hover:bg-gray-100'
           )}
         >
-          <Settings className="h-5 w-5" />
-          <span>Settings</span>
+          <UserRoundPen className="h-5 w-5" />
+          <span>Profile </span>
         </Link>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}

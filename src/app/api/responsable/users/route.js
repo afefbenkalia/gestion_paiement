@@ -37,10 +37,21 @@ export async function GET(request) {
         id: true,
         name: true,
         email: true,
+        tel: true,
         role: true,
         status: true,
         cv: true,
         createdAt: true,
+        sessionsFormateur: {
+          select: {
+            sessionId: true,
+          },
+        },
+        sessionsCoordinateur: {
+          select: {
+            id: true,
+          },
+        },
       },
       orderBy: [
         { role: 'asc' },
@@ -48,7 +59,22 @@ export async function GET(request) {
       ],
     });
 
-    return NextResponse.json(users);
+    // Ajouter le nombre de sessions pour chaque utilisateur
+    const usersWithSessionCount = users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      tel: user.tel,
+      role: user.role,
+      status: user.status,
+      cv: user.cv,
+      createdAt: user.createdAt,
+      sessionCount: user.role === 'FORMATEUR' 
+        ? user.sessionsFormateur.length 
+        : user.sessionsCoordinateur.length,
+    }));
+
+    return NextResponse.json(usersWithSessionCount);
   } catch (error) {
     console.error('Erreur GET users:', error);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });

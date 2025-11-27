@@ -53,6 +53,7 @@ model FicheDePaie {
   nomResponsable String   @db.VarChar(200)
   periode        String   @db.VarChar(150)
   etat           EtatFiche @default(EN_ATTENTE)
+  cloture        Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   
@@ -84,6 +85,7 @@ model FicheDePaie {
   @@index([numMemoire])
   @@index([typeFiche])
   @@index([etat])
+  @@index([cloture])
 }
 
 // Enum pour les types de fiches
