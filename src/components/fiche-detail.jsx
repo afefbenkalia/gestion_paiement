@@ -13,6 +13,8 @@ export default function FicheDetail({ fiche }) {
 
   const retenue = (fiche?.montantBrut ?? fiche?.montantTotalBrut ?? 0) - (fiche?.montantNet ?? fiche?.montantTotalNet ?? 0)
 
+  const personLabel = fiche?.typeFiche === 'COORDINATION' ? 'Coordinateur' : 'Formateur'
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <div className="flex items-start justify-between mb-6 border p-4 rounded">
@@ -32,16 +34,16 @@ export default function FicheDetail({ fiche }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <div className="text-xs text-gray-500">Responsable</div>
-            <div className="font-semibold">{fiche?.nomResponsable || resp.name || 'N/A'}</div>
+            <div className="font-semibold">{fiche?.nomResponsable || resp.name || '-'}</div>
             <div className="text-xs text-gray-500 mt-2">Période</div>
             <div className="font-medium">{session.dateDebut ? formatDate(session.dateDebut) : ''} — {session.dateFin ? formatDate(session.dateFin) : ''}</div>
             <div className="text-xs text-gray-500 mt-2">Classe / Spécialité</div>
-            <div className="font-medium">{session.classe || 'N/A'} / {session.specialite || 'N/A'}</div>
+            <div className="font-medium">{session.classe || '-'} / {session.specialite || '-'}</div>
           </div>
 
           <div>
-            <div className="text-xs text-gray-500">Formateur</div>
-            <div className="font-semibold">{form.name || 'N/A'}</div>
+            <div className="text-xs text-gray-500">{personLabel}</div>
+            <div className="font-semibold">{personLabel === 'Coordinateur' ? (coord.name || form.name || '-') : (form.name || '-')}</div>
             <div className="mt-3 text-xs text-gray-500">Montant Brut</div>
             <div className="font-medium">{formatAmount(fiche?.montantBrut ?? fiche?.montantTotalBrut)}</div>
             <div className="mt-3 text-xs text-gray-500">Montant Net</div>
