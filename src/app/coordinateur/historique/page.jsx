@@ -64,7 +64,7 @@ export default function CoordinateurHistoriquePage() {
       <div className="bg-gradient-to-r from-white to-gray-50 p-6 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">Historique — Fiches de paie</h2>
+            <h2 className="text-2xl font-bold text-gray-800">Historique  Fiches de paie</h2>
             <p className="text-sm text-gray-500 mt-1">Historique des fiches pour les sessions dont vous êtes coordinateur</p>
           </div>
           

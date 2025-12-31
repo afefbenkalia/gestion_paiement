@@ -15,7 +15,9 @@ export async function GET() {
     const userId = Number(session.user.id)
 
     const fiches = await prisma.ficheDePaie.findMany({
-      where: { formateurId: userId },
+      where: { formateurId: userId,
+        typeFiche:"FORMATION"
+       },
       orderBy: { createdAt: 'desc' },
     })
 

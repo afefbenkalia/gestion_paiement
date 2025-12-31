@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import prisma from '@/lib/prisma'
+import { TypeFiche } from '@prisma/client'
 
 export async function GET() {
   try {
@@ -16,7 +17,8 @@ export async function GET() {
 
     // Return fiches linked to sessions managed by this coordinateur
     const fiches = await prisma.ficheDePaie.findMany({
-      where: { session: { coordinateurId: userId } },
+      where: { session: { coordinateurId: userId } ,
+    typeFiche:"COORDINATION"},
       include: { session: true },
       orderBy: { createdAt: 'desc' },
     })
