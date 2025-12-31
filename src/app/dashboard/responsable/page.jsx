@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,19 @@ import { ResponsableSidebar } from '@/components/responsable-sidebar';
 import { Calendar, Users, User, Bell, Trash2, Trash } from 'lucide-react';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
+import { Line } from 'react-chartjs-2';
+import {
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LineElement,
+  LinearScale,
+  PointElement,
+  Tooltip,
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
 export default function ResponsableDashboard() {
   const { data: session, status } = useSession();
@@ -30,6 +43,90 @@ export default function ResponsableDashboard() {
     }
     return [];
   });
+  const [paymentRange, setPaymentRange] = useState('week');
+
+  const paymentSeries = useMemo(
+    () => ({
+      week: {
+        labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+        paid: [1200, 1850, 2100, 2450, 3000, 3420, 3800],
+        pending: [400, 350, 300, 250, 200, 180, 150],
+      },
+      month: {
+        labels: ['S1', 'S2', 'S3', 'S4'],
+        paid: [8200, 12350, 16800, 21250],
+        pending: [1600, 1450, 1100, 950],
+      },
+      year: {
+        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jui', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+        paid: [5200, 7600, 9800, 12500, 14500, 16800, 19300, 21400, 23800, 26200, 28500, 31200],
+        pending: [2100, 1800, 1600, 1500, 1400, 1300, 1200, 1100, 1000, 900, 850, 800],
+      },
+    }),
+    [],
+  );
+
+  const chartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { boxWidth: 12, color: '#0f172a' },
+        },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('fr-FR')} TND`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#334155' },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#f1f5f9' },
+          ticks: {
+            color: '#334155',
+            callback: (value) => `${Number(value).toLocaleString('fr-FR')} TND`,
+          },
+        },
+      },
+    }),
+    [],
+  );
+
+  const chartData = useMemo(() => {
+    const serie = paymentSeries[paymentRange];
+    return {
+      labels: serie.labels,
+      datasets: [
+        {
+          label: 'Payé',
+          data: serie.paid,
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37, 99, 235, 0.15)',
+          pointBackgroundColor: '#1d4ed8',
+          tension: 0.35,
+          fill: true,
+        },
+        {
+          label: 'En attente',
+          data: serie.pending,
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.18)',
+          pointBackgroundColor: '#d97706',
+          borderDash: [6, 4],
+          tension: 0.35,
+          fill: true,
+        },
+      ],
+    };
+  }, [paymentRange, paymentSeries]);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -290,6 +387,39 @@ export default function ResponsableDashboard() {
                   <Users className="w-6 h-6" />
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* Paiements - progression */}
+          <section className="bg-white border rounded-xl p-6 shadow-sm hover:shadow transition">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div>
+                <p className="text-sm text-gray-500">Progression des paiements</p>
+                <h2 className="text-xl font-semibold text-gray-900">Suivi des encaissements</h2>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-100 rounded-full p-1 w-fit">
+                {[
+                  { key: 'week', label: 'Semaine' },
+                  { key: 'month', label: 'Mois' },
+                  { key: 'year', label: 'Année' },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setPaymentRange(item.key)}
+                    className={`px-3 py-1.5 text-sm rounded-full transition ${
+                      paymentRange === item.key
+                        ? 'bg-white shadow text-blue-700'
+                        : 'text-gray-600 hover:text-gray-800'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="mt-6 h-80">
+              <Line data={chartData} options={chartOptions} />
             </div>
           </section>
 
