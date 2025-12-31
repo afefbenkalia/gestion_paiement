@@ -316,13 +316,12 @@ export default function FormateurProfilePage() {
                     </label>
                     <input
                       type="text"
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                      readOnly
+                      className={`w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed ${
                         formErrors.rib ? "border-red-300" : "border-gray-300"
                       }`}
                       value={profileForm.rib}
-                      onChange={handleRIBChange}
                       placeholder="12345678901234567890"
-                      maxLength={20}
                     />
                     {formErrors.rib && (
                       <p className="mt-1 text-sm text-red-600">{formErrors.rib}</p>
@@ -333,26 +332,11 @@ export default function FormateurProfilePage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Banque</label>
                     <input
                       type="text"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
                       value={profileForm.banque}
-                      onChange={handleBankChange}
-                      onFocus={() => profileForm.banque.length > 1 && setShowBankSuggestions(true)}
-                      onBlur={() => setTimeout(() => setShowBankSuggestions(false), 200)}
                       placeholder="Nom de la banque"
                     />
-                    {showBankSuggestions && bankSuggestions.length > 0 && (
-                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {bankSuggestions.map((bank, index) => (
-                          <div
-                            key={index}
-                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0"
-                            onMouseDown={() => selectBank(bank)}
-                          >
-                            <div className="text-sm text-gray-700">{bank}</div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
 
                   <div className="md:col-span-2">
