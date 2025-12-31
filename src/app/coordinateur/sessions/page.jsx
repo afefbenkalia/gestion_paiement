@@ -58,7 +58,7 @@ export default function CoordinateurSessionsPage() {
   }
 
   return (
-    <div className="w-11/12 mx-auto px-4">
+    <div className="w-full max-w-7xl mx-auto px-6">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Mes sessions</h1>
         <p className="text-gray-600">Liste des sessions que vous coordonnez</p>
@@ -81,23 +81,23 @@ export default function CoordinateurSessionsPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ delay: i * 0.06 }}
               whileHover={{ y: -5, scale: 1.02 }}
-              className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200/60 overflow-hidden group"
+              className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200/60 overflow-hidden group flex flex-col h-full min-h-[360px]"
             >
               <div className="p-6 pb-4 border-b border-gray-100 relative">
                 {sessionItem.specialite && (
-                  <div className="absolute top-4 right-4">
-                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-linear-to-r from-blue-500 to-blue-600 text-white shadow-sm">
+                  <div className="absolute top-3 right-3">
+                    <span className="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-semibold bg-linear-to-r from-blue-500 to-blue-600 text-white shadow-md">
                       {sessionItem.specialite}
                     </span>
                   </div>
                 )}
-                <h3 className="text-xl font-bold text-gray-900 pr-20 leading-tight group-hover:text-blue-700 transition-colors">
+                <h3 className="text-xl font-bold text-gray-900 pr-28 leading-tight group-hover:text-blue-700 transition-colors">
                   {sessionItem.titre}
                 </h3>
               </div>
 
-              <div className="p-6">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-4 p-3 bg-gray-50 rounded-lg">
+              <div className="p-6 flex flex-col gap-4 h-full">
+                <div className="flex items-center gap-2 text-sm text-gray-600 p-3 bg-gray-50 rounded-lg">
                   <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
                   <div className="flex flex-wrap items-center gap-1">
                     <span className="font-medium">Du</span>
@@ -111,7 +111,7 @@ export default function CoordinateurSessionsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 mb-6">
+                <div className="grid grid-cols-1 gap-3">
                   <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100">
                     <div className="flex items-center gap-2 mb-2">
                       <User className="w-4 h-4 text-blue-600" />
@@ -134,7 +134,7 @@ export default function CoordinateurSessionsPage() {
                 </div>
 
 
-                <div className="mt-4 flex gap-2">
+                <div className="mt-auto flex gap-2 pt-2">
                   <a
                     href={`/coordinateur/fiches/${sessionItem.id}`}
                     className="ml-auto bg-linear-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:opacity-95 transition-colors"
